@@ -28,7 +28,11 @@ export interface Part {
 
 const P = 6; // поле вокруг детали, мировые единицы
 
-function part(w: number, h: number, s: number): { c: HTMLCanvasElement; ctx: CanvasRenderingContext2D; o: number } {
+function part(
+  w: number,
+  h: number,
+  s: number,
+): { c: HTMLCanvasElement; ctx: CanvasRenderingContext2D; o: number } {
   const c = makeCanvas((w + P * 2) * s, (h + P * 2) * s);
   return { c, ctx: ctx2d(c), o: P * s };
 }
@@ -45,7 +49,15 @@ function brad(ctx: CanvasRenderingContext2D, x: number, y: number, s: number): v
   ctx.fill();
 }
 
-function piece(ctx: CanvasRenderingContext2D, path: Path, color: string, rng: Rng, sun: Pt, s: number, light = 0.6): void {
+function piece(
+  ctx: CanvasRenderingContext2D,
+  path: Path,
+  color: string,
+  rng: Rng,
+  sun: Pt,
+  s: number,
+  light = 0.6,
+): void {
   ctx.save();
   ctx.filter = `blur(${1.2 * s}px)`;
   tracePath(ctx, translatePath(path, -sun.x * 1.8 * s, -sun.y * 1.8 * s));
@@ -62,21 +74,31 @@ export function heroLeg(rng: Rng, s: number, sun: Pt): Part {
   const w = 16;
   const h = 26;
   const { c, ctx, o } = part(w, h, s);
-  const shin: Path = scissorCut(rng, [
-    { x: o + 3 * s, y: o },
-    { x: o + 12 * s, y: o },
-    { x: o + 12.5 * s, y: o + 18 * s },
-    { x: o + 3 * s, y: o + 18 * s },
-  ], 0.5 * s, 4 * s);
+  const shin: Path = scissorCut(
+    rng,
+    [
+      { x: o + 3 * s, y: o },
+      { x: o + 12 * s, y: o },
+      { x: o + 12.5 * s, y: o + 18 * s },
+      { x: o + 3 * s, y: o + 18 * s },
+    ],
+    0.5 * s,
+    4 * s,
+  );
   piece(ctx, shin, shade(palette.hero.hat, -0.35), rng, sun, s, 0.35);
-  const boot: Path = scissorCut(rng, [
-    { x: o + 2 * s, y: o + 12 * s },
-    { x: o + 13 * s, y: o + 12 * s },
-    { x: o + 13.5 * s, y: o + 20 * s },
-    { x: o + 16 * s, y: o + 22 * s },
-    { x: o + 16 * s, y: o + 26 * s },
-    { x: o + 1.5 * s, y: o + 26 * s },
-  ], 0.5 * s, 4 * s);
+  const boot: Path = scissorCut(
+    rng,
+    [
+      { x: o + 2 * s, y: o + 12 * s },
+      { x: o + 13 * s, y: o + 12 * s },
+      { x: o + 13.5 * s, y: o + 20 * s },
+      { x: o + 16 * s, y: o + 22 * s },
+      { x: o + 16 * s, y: o + 26 * s },
+      { x: o + 1.5 * s, y: o + 26 * s },
+    ],
+    0.5 * s,
+    4 * s,
+  );
   piece(ctx, boot, palette.hero.boots, rng, sun, s, 0.4);
   // отворот сапога
   ctx.fillStyle = shade(palette.hero.boots, 0.15);
@@ -89,15 +111,20 @@ export function heroBody(rng: Rng, s: number, sun: Pt): Part {
   const w = 42;
   const h = 40;
   const { c, ctx, o } = part(w, h, s);
-  const coat: Path = scissorCut(rng, [
-    { x: o + 9 * s, y: o + 2 * s },
-    { x: o + 33 * s, y: o + 2 * s },
-    { x: o + 38 * s, y: o + 14 * s },
-    { x: o + 42 * s, y: o + 36 * s },
-    { x: o + 21 * s, y: o + 40 * s },
-    { x: o + 0 * s, y: o + 36 * s },
-    { x: o + 4 * s, y: o + 14 * s },
-  ], 0.7 * s, 5 * s);
+  const coat: Path = scissorCut(
+    rng,
+    [
+      { x: o + 9 * s, y: o + 2 * s },
+      { x: o + 33 * s, y: o + 2 * s },
+      { x: o + 38 * s, y: o + 14 * s },
+      { x: o + 42 * s, y: o + 36 * s },
+      { x: o + 21 * s, y: o + 40 * s },
+      { x: o + 0 * s, y: o + 36 * s },
+      { x: o + 4 * s, y: o + 14 * s },
+    ],
+    0.7 * s,
+    5 * s,
+  );
   piece(ctx, coat, palette.hero.coat, rng, sun, s, 0.7);
   // тень складки со стороны от солнца
   ctx.save();
@@ -141,12 +168,17 @@ export function heroBasket(rng: Rng, s: number, sun: Pt): Part {
   const w = 30;
   const h = 30;
   const { c, ctx, o } = part(w, h, s);
-  const b: Path = scissorCut(rng, [
-    { x: o, y: o + 4 * s },
-    { x: o + 30 * s, y: o + 4 * s },
-    { x: o + 27 * s, y: o + 30 * s },
-    { x: o + 3 * s, y: o + 30 * s },
-  ], 0.6 * s, 4 * s);
+  const b: Path = scissorCut(
+    rng,
+    [
+      { x: o, y: o + 4 * s },
+      { x: o + 30 * s, y: o + 4 * s },
+      { x: o + 27 * s, y: o + 30 * s },
+      { x: o + 3 * s, y: o + 30 * s },
+    ],
+    0.6 * s,
+    4 * s,
+  );
   piece(ctx, b, palette.hero.basket, rng, sun, s, 0.5);
   ctx.save();
   tracePath(ctx, b);
@@ -166,12 +198,17 @@ export function heroBasket(rng: Rng, s: number, sun: Pt): Part {
   }
   ctx.restore();
   // ободок
-  const rim: Path = scissorCut(rng, [
-    { x: o - 1 * s, y: o + 2 * s },
-    { x: o + 31 * s, y: o + 2 * s },
-    { x: o + 31 * s, y: o + 6.5 * s },
-    { x: o - 1 * s, y: o + 6.5 * s },
-  ], 0.4 * s, 4 * s);
+  const rim: Path = scissorCut(
+    rng,
+    [
+      { x: o - 1 * s, y: o + 2 * s },
+      { x: o + 31 * s, y: o + 2 * s },
+      { x: o + 31 * s, y: o + 6.5 * s },
+      { x: o - 1 * s, y: o + 6.5 * s },
+    ],
+    0.4 * s,
+    4 * s,
+  );
   piece(ctx, rim, palette.hero.basketShade, rng, sun, s, 0.4);
   return { canvas: c, pivot: { x: (o + 15 * s) / c.width, y: (o + 30 * s) / c.height } };
 }
@@ -179,15 +216,20 @@ export function heroBasket(rng: Rng, s: number, sun: Pt): Part {
 /** Хвост пойманной рыбы, торчащий из корзины; шарнир — основание. */
 export function basketTail(rng: Rng, s: number, sun: Pt): Part {
   const { c, ctx, o } = part(12, 14, s);
-  const t: Path = scissorCut(rng, [
-    { x: o + 5 * s, y: o + 14 * s },
-    { x: o + 7 * s, y: o + 14 * s },
-    { x: o + 7.5 * s, y: o + 7 * s },
-    { x: o + 12 * s, y: o },
-    { x: o + 6 * s, y: o + 3.5 * s },
-    { x: o, y: o },
-    { x: o + 4.5 * s, y: o + 7 * s },
-  ], 0.4 * s, 3 * s);
+  const t: Path = scissorCut(
+    rng,
+    [
+      { x: o + 5 * s, y: o + 14 * s },
+      { x: o + 7 * s, y: o + 14 * s },
+      { x: o + 7.5 * s, y: o + 7 * s },
+      { x: o + 12 * s, y: o },
+      { x: o + 6 * s, y: o + 3.5 * s },
+      { x: o, y: o },
+      { x: o + 4.5 * s, y: o + 7 * s },
+    ],
+    0.4 * s,
+    3 * s,
+  );
   piece(ctx, t, palette.fish.base, rng, sun, s, 0.6);
   return { canvas: c, pivot: { x: (o + 6 * s) / c.width, y: (o + 14 * s) / c.height } };
 }
@@ -195,14 +237,24 @@ export function basketTail(rng: Rng, s: number, sun: Pt): Part {
 /** Рука в рукаве с варежкой; шарнир — плечо. */
 export function heroArm(rng: Rng, s: number, sun: Pt, back: boolean): Part {
   const { c, ctx, o } = part(12, 28, s);
-  const sleeve: Path = scissorCut(rng, [
-    { x: o + 1 * s, y: o },
-    { x: o + 11 * s, y: o },
-    { x: o + 11.5 * s, y: o + 19 * s },
-    { x: o + 0.5 * s, y: o + 19 * s },
-  ], 0.5 * s, 4 * s);
+  const sleeve: Path = scissorCut(
+    rng,
+    [
+      { x: o + 1 * s, y: o },
+      { x: o + 11 * s, y: o },
+      { x: o + 11.5 * s, y: o + 19 * s },
+      { x: o + 0.5 * s, y: o + 19 * s },
+    ],
+    0.5 * s,
+    4 * s,
+  );
   piece(ctx, sleeve, back ? palette.hero.coatShade : palette.hero.coat, rng, sun, s, 0.55);
-  const mitten: Path = scissorCut(rng, blobPath(rng, o + 6 * s, o + 22.5 * s, 6 * s, 6 * s, 14, 0.12), 0.4 * s, 3 * s);
+  const mitten: Path = scissorCut(
+    rng,
+    blobPath(rng, o + 6 * s, o + 22.5 * s, 6 * s, 6 * s, 14, 0.12),
+    0.4 * s,
+    3 * s,
+  );
   piece(ctx, mitten, back ? shade(palette.hero.mittens, -0.15) : palette.hero.mittens, rng, sun, s, 0.45);
   // большой палец
   const thumb = blobPath(rng, o + 11 * s, o + 20.5 * s, 2.4 * s, 3 * s, 10, 0.1);
@@ -214,7 +266,12 @@ export function heroArm(rng: Rng, s: number, sun: Pt, back: boolean): Part {
 /** Голова; шарнир — шея. `cold` — синий нос после второго падения. */
 export function heroHead(rng: Rng, s: number, sun: Pt, cold: boolean): Part {
   const { c, ctx, o } = part(32, 32, s);
-  const face = scissorCut(rng, blobPath(rng, o + 16 * s, o + 16 * s, 14.5 * s, 15 * s, 26, 0.05), 0.5 * s, 4 * s);
+  const face = scissorCut(
+    rng,
+    blobPath(rng, o + 16 * s, o + 16 * s, 14.5 * s, 15 * s, 26, 0.05),
+    0.5 * s,
+    4 * s,
+  );
   piece(ctx, face, palette.hero.skin, rng, sun, s, 0.55);
   // ухо со стороны затылка
   const ear = blobPath(rng, o + 4 * s, o + 17 * s, 3 * s, 4 * s, 10, 0.1);
@@ -248,14 +305,19 @@ export function heroHead(rng: Rng, s: number, sun: Pt, cold: boolean): Part {
 /** Вязаная шапка с помпоном; шарнир — середина отворота. */
 export function heroHat(rng: Rng, s: number, sun: Pt): Part {
   const { c, ctx, o } = part(34, 30, s);
-  const cap: Path = scissorCut(rng, [
-    { x: o + 2 * s, y: o + 26 * s },
-    { x: o + 4 * s, y: o + 13 * s },
-    { x: o + 12 * s, y: o + 6 * s },
-    { x: o + 22 * s, y: o + 6 * s },
-    { x: o + 30 * s, y: o + 13 * s },
-    { x: o + 32 * s, y: o + 26 * s },
-  ], 0.6 * s, 4 * s);
+  const cap: Path = scissorCut(
+    rng,
+    [
+      { x: o + 2 * s, y: o + 26 * s },
+      { x: o + 4 * s, y: o + 13 * s },
+      { x: o + 12 * s, y: o + 6 * s },
+      { x: o + 22 * s, y: o + 6 * s },
+      { x: o + 30 * s, y: o + 13 * s },
+      { x: o + 32 * s, y: o + 26 * s },
+    ],
+    0.6 * s,
+    4 * s,
+  );
   piece(ctx, cap, palette.hero.hat, rng, sun, s, 0.5);
   // рубчик вязки
   ctx.save();
@@ -270,12 +332,17 @@ export function heroHat(rng: Rng, s: number, sun: Pt): Part {
     ctx.stroke();
   }
   ctx.restore();
-  const band: Path = scissorCut(rng, [
-    { x: o, y: o + 20 * s },
-    { x: o + 34 * s, y: o + 20 * s },
-    { x: o + 34 * s, y: o + 28 * s },
-    { x: o, y: o + 28 * s },
-  ], 0.5 * s, 4 * s);
+  const band: Path = scissorCut(
+    rng,
+    [
+      { x: o, y: o + 20 * s },
+      { x: o + 34 * s, y: o + 20 * s },
+      { x: o + 34 * s, y: o + 28 * s },
+      { x: o, y: o + 28 * s },
+    ],
+    0.5 * s,
+    4 * s,
+  );
   piece(ctx, band, shade(palette.hero.hat, 0.12), rng, sun, s, 0.5);
   const pom = scissorCut(rng, blobPath(rng, o + 17 * s, o + 5 * s, 6.5 * s, 6 * s, 16, 0.18), 0.8 * s, 3 * s);
   piece(ctx, pom, palette.hero.pompom, rng, sun, s, 0.8);
@@ -303,12 +370,17 @@ export function heroIcicles(rng: Rng, s: number): Part {
 /** Шарф на шее; шарнир — середина. */
 export function heroScarf(rng: Rng, s: number, sun: Pt): Part {
   const { c, ctx, o } = part(34, 10, s);
-  const wrap: Path = scissorCut(rng, [
-    { x: o, y: o + 2 * s },
-    { x: o + 34 * s, y: o + 1 * s },
-    { x: o + 33 * s, y: o + 9.5 * s },
-    { x: o + 1 * s, y: o + 10 * s },
-  ], 0.5 * s, 4 * s);
+  const wrap: Path = scissorCut(
+    rng,
+    [
+      { x: o, y: o + 2 * s },
+      { x: o + 34 * s, y: o + 1 * s },
+      { x: o + 33 * s, y: o + 9.5 * s },
+      { x: o + 1 * s, y: o + 10 * s },
+    ],
+    0.5 * s,
+    4 * s,
+  );
   piece(ctx, wrap, palette.hero.scarf, rng, sun, s, 0.6);
   ctx.save();
   tracePath(ctx, wrap);
@@ -322,15 +394,20 @@ export function heroScarf(rng: Rng, s: number, sun: Pt): Part {
 /** Развевающийся конец шарфа — отдельный кусок; шарнир — у шеи. */
 export function heroScarfTail(rng: Rng, s: number, sun: Pt): Part {
   const { c, ctx, o } = part(26, 10, s);
-  const t: Path = scissorCut(rng, [
-    { x: o + 26 * s, y: o + 1 * s },
-    { x: o + 4 * s, y: o + 2 * s },
-    { x: o, y: o + 0 * s },
-    { x: o + 1 * s, y: o + 5 * s },
-    { x: o, y: o + 10 * s },
-    { x: o + 5 * s, y: o + 8 * s },
-    { x: o + 26 * s, y: o + 8 * s },
-  ], 0.5 * s, 4 * s);
+  const t: Path = scissorCut(
+    rng,
+    [
+      { x: o + 26 * s, y: o + 1 * s },
+      { x: o + 4 * s, y: o + 2 * s },
+      { x: o, y: o + 0 * s },
+      { x: o + 1 * s, y: o + 5 * s },
+      { x: o, y: o + 10 * s },
+      { x: o + 5 * s, y: o + 8 * s },
+      { x: o + 26 * s, y: o + 8 * s },
+    ],
+    0.5 * s,
+    4 * s,
+  );
   piece(ctx, t, palette.hero.scarf, rng, sun, s, 0.6);
   ctx.strokeStyle = rgba(shade(palette.hero.scarf, -0.25), 0.7);
   ctx.lineWidth = 1 * s;
@@ -362,18 +439,23 @@ export function heroDrip(s: number): Part {
 /** Тело розовой рыбы: светлое брюхо, глаз-точка; шарнир — середина брюха (основание). */
 export function fishBody(rng: Rng, s: number, sun: Pt): Part {
   const { c, ctx, o } = part(46, 24, s);
-  const body: Path = scissorCut(rng, [
-    { x: o + 46 * s, y: o + 12 * s },
-    { x: o + 40 * s, y: o + 4 * s },
-    { x: o + 28 * s, y: o + 1 * s },
-    { x: o + 14 * s, y: o + 3 * s },
-    { x: o + 3 * s, y: o + 9 * s },
-    { x: o, y: o + 12 * s },
-    { x: o + 3 * s, y: o + 16 * s },
-    { x: o + 14 * s, y: o + 22 * s },
-    { x: o + 30 * s, y: o + 23 * s },
-    { x: o + 41 * s, y: o + 19 * s },
-  ], 0.6 * s, 4 * s);
+  const body: Path = scissorCut(
+    rng,
+    [
+      { x: o + 46 * s, y: o + 12 * s },
+      { x: o + 40 * s, y: o + 4 * s },
+      { x: o + 28 * s, y: o + 1 * s },
+      { x: o + 14 * s, y: o + 3 * s },
+      { x: o + 3 * s, y: o + 9 * s },
+      { x: o, y: o + 12 * s },
+      { x: o + 3 * s, y: o + 16 * s },
+      { x: o + 14 * s, y: o + 22 * s },
+      { x: o + 30 * s, y: o + 23 * s },
+      { x: o + 41 * s, y: o + 19 * s },
+    ],
+    0.6 * s,
+    4 * s,
+  );
   piece(ctx, body, palette.fish.base, rng, sun, s, 0.7);
   ctx.save();
   tracePath(ctx, body);
@@ -385,7 +467,10 @@ export function fishBody(rng: Rng, s: number, sun: Pt): Part {
     { x: o + 44 * s, y: o + 26 * s },
     { x: o, y: o + 26 * s },
   ];
-  paperFill(ctx, scissorCut(rng, belly, 0.6 * s, 4 * s), palette.fish.belly, rng, { tone: 0.03, blotches: 1 });
+  paperFill(ctx, scissorCut(rng, belly, 0.6 * s, 4 * s), palette.fish.belly, rng, {
+    tone: 0.03,
+    blotches: 1,
+  });
   // чешуя — полукружья
   ctx.strokeStyle = rgba(palette.fish.fin, 0.55);
   ctx.lineWidth = 1 * s;
@@ -417,13 +502,18 @@ export function fishBody(rng: Rng, s: number, sun: Pt): Part {
 /** Хвост рыбы на шарнире. */
 export function fishTail(rng: Rng, s: number, sun: Pt): Part {
   const { c, ctx, o } = part(18, 22, s);
-  const t: Path = scissorCut(rng, [
-    { x: o + 18 * s, y: o + 9 * s },
-    { x: o + 18 * s, y: o + 13 * s },
-    { x: o + 4 * s, y: o + 22 * s },
-    { x: o + 7 * s, y: o + 11 * s },
-    { x: o + 4 * s, y: o },
-  ], 0.5 * s, 3 * s);
+  const t: Path = scissorCut(
+    rng,
+    [
+      { x: o + 18 * s, y: o + 9 * s },
+      { x: o + 18 * s, y: o + 13 * s },
+      { x: o + 4 * s, y: o + 22 * s },
+      { x: o + 7 * s, y: o + 11 * s },
+      { x: o + 4 * s, y: o },
+    ],
+    0.5 * s,
+    3 * s,
+  );
   piece(ctx, t, palette.fish.fin, rng, sun, s, 0.55);
   ctx.strokeStyle = rgba(shade(palette.fish.fin, -0.2), 0.7);
   ctx.lineWidth = 0.8 * s;
@@ -439,12 +529,17 @@ export function fishTail(rng: Rng, s: number, sun: Pt): Part {
 /** Спинной плавник на шарнире. */
 export function fishFin(rng: Rng, s: number, sun: Pt): Part {
   const { c, ctx, o } = part(16, 9, s);
-  const f: Path = scissorCut(rng, [
-    { x: o, y: o + 9 * s },
-    { x: o + 5 * s, y: o + 1 * s },
-    { x: o + 16 * s, y: o },
-    { x: o + 14 * s, y: o + 9 * s },
-  ], 0.4 * s, 3 * s);
+  const f: Path = scissorCut(
+    rng,
+    [
+      { x: o, y: o + 9 * s },
+      { x: o + 5 * s, y: o + 1 * s },
+      { x: o + 16 * s, y: o },
+      { x: o + 14 * s, y: o + 9 * s },
+    ],
+    0.4 * s,
+    3 * s,
+  );
   piece(ctx, f, palette.fish.fin, rng, sun, s, 0.5);
   return { canvas: c, pivot: { x: (o + 8 * s) / c.width, y: (o + 9 * s) / c.height } };
 }

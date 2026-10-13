@@ -85,11 +85,20 @@ export class Juice {
     });
   }
 
-  burst(name: 'splash' | 'snow' | 'chips' | 'bubbles' | 'steam' | 'drip', x: number, y: number, n: number): void {
+  burst(
+    name: 'splash' | 'snow' | 'chips' | 'bubbles' | 'steam' | 'drip',
+    x: number,
+    y: number,
+    n: number,
+  ): void {
     const e = this.emitters[name];
     if (!e) return;
     const count = Math.max(1, Math.round(this.lowQuality ? n / 2 : n));
-    if (this.totalAlive() + count > (this.lowQuality ? balance.quality.maxParticles / 2 : balance.quality.maxParticles)) return;
+    if (
+      this.totalAlive() + count >
+      (this.lowQuality ? balance.quality.maxParticles / 2 : balance.quality.maxParticles)
+    )
+      return;
     e.explode(count, x, y);
   }
 
@@ -122,7 +131,13 @@ export class Juice {
    * Слово-звук (9.1.4): появляется над событием со смещением вверх и за 200 мс уходит
    * с героя и соседних льдин. Одновременно не больше трёх.
    */
-  word(text: string, x: number, y: number, cell: number, opts: { small?: boolean; still?: boolean } = {}): void {
+  word(
+    text: string,
+    x: number,
+    y: number,
+    cell: number,
+    opts: { small?: boolean; still?: boolean } = {},
+  ): void {
     const ref = this.art.word(text, opts.small ? 34 : 46);
     while (this.words.length >= balance.anim.maxWords) {
       const old = this.words.shift();
@@ -139,7 +154,13 @@ export class Juice {
       img.setScale(base * 0.9);
       img.setAlpha(0);
       this.scene.tweens.add({ targets: img, alpha: 1, duration: 80 });
-      this.scene.tweens.add({ targets: img, alpha: 0, delay: life * 0.55, duration: life * 0.3, onComplete: () => this.drop(w) });
+      this.scene.tweens.add({
+        targets: img,
+        alpha: 0,
+        delay: life * 0.55,
+        duration: life * 0.3,
+        onComplete: () => this.drop(w),
+      });
       return;
     }
     const rise = cell * 1.15;
@@ -153,7 +174,12 @@ export class Juice {
       img.setRotation((Math.random() - 0.5) * 0.18);
       // «Шлёпается»: перелёт и оседание, и за 200 мс — прочь с героя.
       this.scene.tweens.add({ targets: img, scale: base, duration: 180, ease: 'Back.Out' });
-      this.scene.tweens.add({ targets: img, y: y - rise, duration: balance.anim.wordCoverMs, ease: 'Quad.Out' });
+      this.scene.tweens.add({
+        targets: img,
+        y: y - rise,
+        duration: balance.anim.wordCoverMs,
+        ease: 'Quad.Out',
+      });
     }
     this.scene.tweens.add({
       targets: img,

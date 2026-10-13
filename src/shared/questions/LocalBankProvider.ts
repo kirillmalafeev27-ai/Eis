@@ -55,7 +55,9 @@ export class LocalBankProvider implements QuestionProvider {
   report(r: { id: string; correct: boolean; timeMs: number }): void {
     this.reports.push(r);
     if (!r.correct) {
-      const gap = this.opts.retryWrongMin + Math.floor(this.rand() * (this.opts.retryWrongMax - this.opts.retryWrongMin + 1));
+      const gap =
+        this.opts.retryWrongMin +
+        Math.floor(this.rand() * (this.opts.retryWrongMax - this.opts.retryWrongMin + 1));
       this.retries.push({ id: r.id, at: this.shown + gap });
     }
   }

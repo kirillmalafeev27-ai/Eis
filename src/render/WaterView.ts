@@ -37,7 +37,13 @@ export class WaterView {
     for (let i = 0; i < n; i++) {
       const img = artImage(scene, art, K.bit(i % BIT_VARIANTS));
       img.setAlpha(0.95);
-      this.bits.push({ img, across: Math.random(), along: Math.random(), speed: 0.75 + Math.random() * 0.6, spin: (Math.random() - 0.5) * 0.4 });
+      this.bits.push({
+        img,
+        across: Math.random(),
+        along: Math.random(),
+        speed: 0.75 + Math.random() * 0.6,
+        spin: (Math.random() - 0.5) * 0.4,
+      });
     }
   }
 
@@ -46,14 +52,23 @@ export class WaterView {
     for (const t of this.tiles) t.destroy();
     this.tiles.length = 0;
     const portrait = o.orient === 'portrait';
-    const keys = portrait ? [K.waterDeep, K.waterMid, K.waterLight] : [K.waterDeepV, K.waterMidV, K.waterLightV];
+    const keys = portrait
+      ? [K.waterDeep, K.waterMid, K.waterLight]
+      : [K.waterDeepV, K.waterMidV, K.waterLightV];
     // Вода покрывает всё видимое поле с запасом.
     const b = o.bounds;
     const pad = o.cell * 6;
     this.rect = { x: b.x - pad, y: b.y - pad, w: b.w + pad * 2, h: b.h + pad * 2 };
     keys.forEach((key, i) => {
       const r = this.art.ref(key);
-      const t = this.scene.add.tileSprite(this.rect.x, this.rect.y, this.rect.w * this.art.s, this.rect.h * this.art.s, r.texture, r.frame);
+      const t = this.scene.add.tileSprite(
+        this.rect.x,
+        this.rect.y,
+        this.rect.w * this.art.s,
+        this.rect.h * this.art.s,
+        r.texture,
+        r.frame,
+      );
       t.setOrigin(0, 0);
       t.setScale(1 / this.art.s);
       if (i === 2) t.setAlpha(0.9);

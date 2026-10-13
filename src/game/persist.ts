@@ -64,7 +64,12 @@ export function saveProgress(s: KeyValueStorage, p: Progress): void {
 }
 
 /** Рекорд уровня: по звёздам, при равенстве — по времени переправы (2.5.3). */
-export function isBetter(prev: LevelProgress | undefined, stars: number, timeMs: number, won: boolean): boolean {
+export function isBetter(
+  prev: LevelProgress | undefined,
+  stars: number,
+  timeMs: number,
+  won: boolean,
+): boolean {
   if (!won) return false;
   if (!prev || !prev.won) return true;
   if (stars !== prev.stars) return stars > prev.stars;

@@ -34,7 +34,13 @@ export function at(g: Grid, a: number, l: number): number {
 
 export function stateFrom(
   rows: string[],
-  opts: { bridge?: [number, number]; fish?: [number, number][]; level?: LevelConfig; pace?: typeof PACE; seed?: number } = {},
+  opts: {
+    bridge?: [number, number];
+    fish?: [number, number][];
+    level?: LevelConfig;
+    pace?: typeof PACE;
+    seed?: number;
+  } = {},
 ): GameState {
   const grid = gridFrom(rows);
   const bridge = opts.bridge ? at(grid, ...opts.bridge) : at(grid, 0, 1);

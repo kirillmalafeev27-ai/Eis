@@ -122,8 +122,17 @@ export function zzfxGenerate(p: ZzfxParams, rand: () => number = Math.random): F
               : i < length - delay
                 ? ((length - i - delay) / release) * sustainVolume
                 : 0;
-      s = (repeatTime ? 1 - tremolo + tremolo * Math.sin((PI2 * i) / repeatTime) : 1) * sign(s) * Math.abs(s) ** shapeCurve * env;
-      if (delay) s = s / 2 + (delay > i ? 0 : ((i < length - delay ? 1 : (length - i) / delay) * b[(i - delay) | 0]) / 2 / volume);
+      s =
+        (repeatTime ? 1 - tremolo + tremolo * Math.sin((PI2 * i) / repeatTime) : 1) *
+        sign(s) *
+        Math.abs(s) ** shapeCurve *
+        env;
+      if (delay)
+        s =
+          s / 2 +
+          (delay > i
+            ? 0
+            : ((i < length - delay ? 1 : (length - i) / delay) * b[(i - delay) | 0]) / 2 / volume);
       if (filter) {
         const y = b2 * x2 + b1 * x1 + b0 * s - a2 * y2 - a1 * y1;
         x2 = x1;

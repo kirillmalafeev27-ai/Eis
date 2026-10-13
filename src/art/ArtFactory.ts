@@ -56,6 +56,8 @@ export interface FrameRef {
 export const BAKED_SUN: Pt = { x: -0.6, y: -0.8 };
 
 const ATLAS = 'art-atlas';
+/** Сколько работы генерации подряд, прежде чем отдать кадр экрану загрузки. */
+const YIELD_MS = 24;
 
 export class ArtFactory {
   /** Масштаб текстур: пикселей текстуры на пиксель мира (128 на клетку → 1). */
@@ -67,6 +69,10 @@ export class ArtFactory {
   private bankSerial = 0;
   readonly hutInfo = { window: { x: 0.6, y: 0.7 }, chimney: { x: 0.65, y: 0.2 } };
   generationMs = 0;
+  /** Время каждого шага генерации — для отладки бюджета (7.3.7). */
+  stepMs: number[] = [];
+  /** Сколько заняла передача страниц атласа на GPU. */
+  uploadMs = 0;
 
   constructor(
     private readonly textures: Phaser.Textures.TextureManager,
@@ -92,7 +98,12 @@ export class ArtFactory {
       const sh = silhouetteShadow(st.canvas, blur * s, '#ffffff');
       const padX = (sh.width - st.canvas.width) / 2;
       const padY = (sh.height - st.canvas.height) / 2;
-      put(K.shadow(key), sh, (st.ox * st.canvas.width + padX) / sh.width, (st.oy * st.canvas.height + padY) / sh.height);
+      put(
+        K.shadow(key),
+        sh,
+        (st.ox * st.canvas.width + padX) / sh.width,
+        (st.oy * st.canvas.height + padY) / sh.height,
+      );
     };
     const putPart = (key: string, p: Part) => {
       put(key, p.canvas, p.pivot.x, p.pivot.y);
@@ -100,7 +111,12 @@ export class ArtFactory {
       const sh = silhouetteShadow(p.canvas, 1.8 * s, '#ffffff');
       const padX = (sh.width - p.canvas.width) / 2;
       const padY = (sh.height - p.canvas.height) / 2;
-      put(K.shadow(key), sh, (p.pivot.x * p.canvas.width + padX) / sh.width, (p.pivot.y * p.canvas.height + padY) / sh.height);
+      put(
+        K.shadow(key),
+        sh,
+        (p.pivot.x * p.canvas.width + padX) / sh.width,
+        (p.pivot.y * p.canvas.height + padY) / sh.height,
+      );
     };
     const steps: (() => void)[] = [];
 
@@ -123,22 +139,35 @@ export class ArtFactory {
     for (let i = 0; i < DEBRIS_VARIANTS; i++) addFloe(K.debris(i), (r) => debrisFloe(r, s, sun), 3000 + i);
 
     // Вода: три слоя для течения вдоль x и повёрнутые — для ландшафта.
+    const rot: Pt = { x: sun.y, y: -sun.x }; // после поворота холста солнце снова сверху слева
+    // Плитки воды тоже живут в атласе: TileSprite в Phaser 4 повторяет кадр атласа,
+    // а каждая отдельная текстура — это лишняя загрузка на GPU при старте.
     steps.push(() => {
-      const rot: Pt = { x: sun.y, y: -sun.x }; // солнце, повёрнутое на −90°: после поворота холста оно снова сверху слева
-      this.addCanvasTexture(K.waterDeep, waterDeep(mulberry32(11), s));
-      this.addCanvasTexture(K.waterMid, waterMid(mulberry32(12), s, sun));
-      this.addCanvasTexture(K.waterLight, waterLight(mulberry32(13), s, sun));
-      this.addCanvasTexture(K.waterDeepV, rotate90(waterDeep(mulberry32(11), s)));
-      this.addCanvasTexture(K.waterMidV, rotate90(waterMid(mulberry32(12), s, rot)));
-      this.addCanvasTexture(K.waterLightV, rotate90(waterLight(mulberry32(13), s, rot)));
+      const deep = waterDeep(mulberry32(11), s);
+      put(K.waterDeep, deep);
+      put(K.waterDeepV, rotate90(deep));
+    });
+    steps.push(() => put(K.waterMid, waterMid(mulberry32(12), s, sun)));
+    steps.push(() => put(K.waterMidV, rotate90(waterMid(mulberry32(12), s, rot))));
+    steps.push(() => {
+      put(K.waterLight, waterLight(mulberry32(13), s, sun));
+      put(K.waterLightV, rotate90(waterLight(mulberry32(13), s, rot)));
+    });
+    steps.push(() => {
       for (let i = 0; i < BIT_VARIANTS; i++) {
-        put(K.bit(i), waterBit(mulberry32(400 + i), s, sun, (rng, cx, cy, r) => blobPath(rng, cx, cy, r * 1.3, r, 12, 0.35)));
+        put(
+          K.bit(i),
+          waterBit(mulberry32(400 + i), s, sun, (rng, cx, cy, r) =>
+            blobPath(rng, cx, cy, r * 1.3, r, 12, 0.35),
+          ),
+        );
       }
     });
 
     // Сосны, избушка, сани, сугробы, камыш, мостки, ворона.
     steps.push(() => {
-      for (let i = 0; i < PINE_VARIANTS; i++) putStanding(K.pine(i), pine(mulberry32(500 + i), s, sun, i / (PINE_VARIANTS - 1)), 4);
+      for (let i = 0; i < PINE_VARIANTS; i++)
+        putStanding(K.pine(i), pine(mulberry32(500 + i), s, sun, i / (PINE_VARIANTS - 1)), 4);
       const h = hut(mulberry32(600), s, sun);
       this.hutInfo.window = h.window;
       this.hutInfo.chimney = h.chimney;
@@ -146,7 +175,8 @@ export class ArtFactory {
       put(K.windowGlow, glowHalo(s, 40, palette.windowLight, 0.95));
       put(K.hutGlow, glowHalo(s, 110, palette.windowLight, 0.45));
       putStanding(K.sled, sled(mulberry32(601), s, sun), 2.5);
-      for (let i = 0; i < DRIFT_VARIANTS; i++) putStanding(K.drift(i), snowDrift(mulberry32(610 + i), s, sun), 3);
+      for (let i = 0; i < DRIFT_VARIANTS; i++)
+        putStanding(K.drift(i), snowDrift(mulberry32(610 + i), s, sun), 3);
       for (let i = 0; i < 3; i++) {
         const r = reed(mulberry32(620 + i), s, sun);
         putStanding(K.reed(i), { canvas: r, ox: 0.5, oy: 1 }, 2);
@@ -184,30 +214,45 @@ export class ArtFactory {
     steps.push(() => {
       put(K.print('safe'), footprint(mulberry32(800), s, 'safe'));
       put(K.print('risky'), footprint(mulberry32(801), s, 'risky'));
+    });
+    steps.push(() => {
       put(K.print('fail'), footprint(mulberry32(802), s, 'fail'));
       put(K.printRoute, footprint(mulberry32(803), s, 'route'));
+    });
+    steps.push(() => {
       put(K.arcDot, arcDot(s));
       put(K.pipOn, pip(s, true));
       put(K.pipOff, pip(s, false));
       put(K.glint, glint(s));
       put(K.glintSoft, softDot(s, 18, palette.sunGlint, 0.7));
       put(K.streak, streak(s));
-      put(K.p.snow, snowPuff(mulberry32(810), s));
-      put(K.p.drop, drop(s));
-      put(K.p.chip, chip(mulberry32(811), s, sun));
-      put(K.p.bubble, bubble(s));
-      put(K.p.steam, softDot(s, 9, '#ffffff', 0.75));
-      put(K.p.smoke, softDot(s, 16, palette.smoke, 0.8));
-      put(K.p.ripple, ring(s, 26, 2.2, palette.water.foam));
-      put(K.p.splash, softDot(s, 6, palette.water.foam, 1));
-      this.addCanvasTexture(K.vignette, vignetteTexture(256));
     });
+    steps.push(() => put(K.p.snow, snowPuff(mulberry32(810), s)));
+    steps.push(() => put(K.p.drop, drop(s)));
+    steps.push(() => put(K.p.chip, chip(mulberry32(811), s, sun)));
+    steps.push(() => put(K.p.bubble, bubble(s)));
+    steps.push(() => put(K.p.steam, softDot(s, 9, '#ffffff', 0.75)));
+    steps.push(() => put(K.p.smoke, softDot(s, 16, palette.smoke, 0.8)));
+    steps.push(() => put(K.p.ripple, ring(s, 26, 2.2, palette.water.foam)));
+    steps.push(() => put(K.p.splash, softDot(s, 6, palette.water.foam, 1)));
+    steps.push(() => put(K.vignette, vignetteTexture(256)));
 
+    this.stepMs = [];
+    // Кадр экрану загрузки отдаём не после каждого шага, а примерно раз в полтора кадра
+    // работы: каждый отданный кадр — это ещё и отрисовка сцены.
+    let sliceStart = performance.now();
     for (let i = 0; i < steps.length; i++) {
+      const t1 = performance.now();
       steps[i]();
-      onProgress?.((i + 1) / (steps.length + 1));
-      await nextFrame();
+      const t2 = performance.now();
+      this.stepMs.push(Math.round(t2 - t1));
+      if (t2 - sliceStart > YIELD_MS || i === steps.length - 1) {
+        onProgress?.((i + 1) / (steps.length + 1));
+        await nextFrame();
+        sliceStart = performance.now();
+      }
     }
+    const tUpload = performance.now();
     // Регистрация атласа в Phaser: одна текстура на страницу, кадры — по ключам.
     atlas.pages.forEach((page, pi) => {
       const key = `${ATLAS}-${pi}`;
@@ -221,6 +266,7 @@ export class ArtFactory {
         this.refs.set(k, { texture: key, frame: k, ox, oy });
       }
     });
+    this.uploadMs = performance.now() - tUpload;
     onProgress?.(1);
     this.generationMs = performance.now() - t0;
   }
@@ -273,8 +319,19 @@ export class ArtFactory {
     const id = `word:${text}:${size}`;
     const hit = this.words.get(id);
     if (hit) return hit;
-    const colors = [palette.caption, palette.hero.scarf, palette.hero.hat, palette.hints.safe, palette.warmth.full];
-    const c = paperWord(text, { colors, font: "'Fredoka', 'Rubik', sans-serif", size: size * this.s, shadow: palette.shadow });
+    const colors = [
+      palette.caption,
+      palette.hero.scarf,
+      palette.hero.hat,
+      palette.hints.safe,
+      palette.warmth.full,
+    ];
+    const c = paperWord(text, {
+      colors,
+      font: "'Fredoka', 'Rubik', sans-serif",
+      size: size * this.s,
+      shadow: palette.shadow,
+    });
     this.addCanvasTexture(id, c);
     const ref = this.ref(id);
     this.words.set(id, ref);

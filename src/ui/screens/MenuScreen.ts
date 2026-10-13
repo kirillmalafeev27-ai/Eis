@@ -11,9 +11,21 @@ export class MenuScreen {
   readonly title: HTMLElement;
   readonly card: HTMLElement;
 
-  constructor(worldOverlay: HTMLElement, questionCard: HTMLElement, onPlay: () => void, onSettings: () => void) {
+  constructor(
+    worldOverlay: HTMLElement,
+    questionCard: HTMLElement,
+    onPlay: () => void,
+    onSettings: () => void,
+  ) {
     const word = paperWord(ru.title, {
-      colors: ['#ffffff', palette.thinIce.base, '#ffffff', palette.thickIce.snowShade, '#ffffff', palette.thinIce.bubbles],
+      colors: [
+        '#ffffff',
+        palette.thinIce.base,
+        '#ffffff',
+        palette.thickIce.snowShade,
+        '#ffffff',
+        palette.thinIce.bubbles,
+      ],
       font: "'Rubik', sans-serif",
       size: 120,
       shadow: palette.shadow,
@@ -29,7 +41,10 @@ export class MenuScreen {
     this.card = el('div', 'menu-card', {}, [
       el('div', 'menu-hello', {}, [ru.menuHello[0], el('br'), ru.menuHello[1]]),
       el('div', 'menu-hint', {}, [ru.menuHint]),
-      el('div', 'menu-buttons', {}, [button(ru.play, 'paper-btn-primary paper-btn-big', onPlay), button(ru.settings, '', onSettings)]),
+      el('div', 'menu-buttons', {}, [
+        button(ru.play, 'paper-btn-primary paper-btn-big', onPlay),
+        button(ru.settings, '', onSettings),
+      ]),
       el('div', 'menu-keys', {}, [ru.keys]),
     ]);
     questionCard.appendChild(this.card);

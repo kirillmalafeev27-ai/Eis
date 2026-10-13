@@ -39,7 +39,10 @@ export function parseColor(c: string): [number, number, number] {
 }
 
 export function toHex(r: number, g: number, b: number): string {
-  const h = (v: number) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0');
+  const h = (v: number) =>
+    Math.max(0, Math.min(255, Math.round(v)))
+      .toString(16)
+      .padStart(2, '0');
   return `#${h(r)}${h(g)}${h(b)}`;
 }
 
@@ -103,7 +106,15 @@ export function centroid(path: Path): Pt {
 }
 
 /** Неровный многоугольник-«клякса»: основа для льдин, сугробов, обломков. */
-export function blobPath(rng: Rng, cx: number, cy: number, rx: number, ry: number, n: number, irregular: number): Path {
+export function blobPath(
+  rng: Rng,
+  cx: number,
+  cy: number,
+  rx: number,
+  ry: number,
+  n: number,
+  irregular: number,
+): Path {
   const out: Path = [];
   const phase = rng() * Math.PI * 2;
   const wob = 2 + Math.floor(rng() * 3);
@@ -130,7 +141,10 @@ export function floePath(rng: Rng, cx: number, cy: number, half: number, irregul
     const c = Math.cos(t);
     const s = Math.sin(t);
     // суперэллипс: |x|^p + |y|^p = 1
-    const r = Math.pow(Math.pow(Math.abs(c), squareness) + Math.pow(Math.abs(s), squareness), -1 / squareness);
+    const r = Math.pow(
+      Math.pow(Math.abs(c), squareness) + Math.pow(Math.abs(s), squareness),
+      -1 / squareness,
+    );
     const k = 1 - irregular * rng() - irregular * 0.5 * Math.max(0, Math.sin(t * 3 + phase));
     out.push({ x: cx + c * r * half * k, y: cy + s * r * half * k });
   }
@@ -271,7 +285,7 @@ export function grainTile(rng: Rng, size: number, density = 1): HTMLCanvasElemen
 }
 
 /** Наложить волокно внутри текущего клипа: умножение с прозрачностью ~8%. */
-export function applyGrain(ctx: Ctx, w: number, h: number, alpha = 0.08, size = 96): void {
+export function applyGrain(ctx: Ctx, w: number, h: number, alpha = 0.08, size = 96, x = 0, y = 0): void {
   const tile = grainTile(mulberry32(0x9a17), size);
   const pat = ctx.createPattern(tile, 'repeat');
   if (!pat) return;
@@ -279,10 +293,26 @@ export function applyGrain(ctx: Ctx, w: number, h: number, alpha = 0.08, size = 
   ctx.globalCompositeOperation = 'multiply';
   ctx.globalAlpha = alpha;
   ctx.fillStyle = pat;
-  ctx.fillRect(0, 0, w, h);
+  ctx.fillRect(x, y, w, h);
   ctx.globalCompositeOperation = 'screen';
   ctx.globalAlpha = alpha * 0.6;
-  ctx.fillRect(0, 0, w, h);
+  ctx.fillRect(x, y, w, h);
+  ctx.restore();
+}
+
+/**
+ * Волокно поверх непрозрачной части холста. applyGrain смешивает умножением и осветлением,
+ * а такие режимы красят и прозрачные пиксели, поэтому после зерна форма восстанавливается
+ * по исходной альфе.
+ */
+export function grainInside(c: HTMLCanvasElement, alpha = 0.08, size = 96): void {
+  const shape = makeCanvas(c.width, c.height);
+  ctx2d(shape).drawImage(c, 0, 0);
+  const ctx = ctx2d(c);
+  applyGrain(ctx, c.width, c.height, alpha, size);
+  ctx.save();
+  ctx.globalCompositeOperation = 'destination-in';
+  ctx.drawImage(shape, 0, 0);
   ctx.restore();
 }
 
@@ -317,7 +347,8 @@ export function paperFill(ctx: Ctx, path: Path, color: string, rng: Rng, opts: F
     ctx.fillStyle = g;
     ctx.fillRect(b.x - 2, b.y - 2, b.w + 4, b.h + 4);
   }
-  applyGrain(ctx, ctx.canvas.width, ctx.canvas.height, opts.grain ?? 0.08);
+  // Волокно — только в пределах фигуры: узор привязан к холсту, поэтому стыков нет.
+  applyGrain(ctx, b.w + 4, b.h + 4, opts.grain ?? 0.08, 96, b.x - 2, b.y - 2);
   ctx.restore();
 }
 
@@ -325,7 +356,12 @@ export function paperFill(ctx: Ctx, path: Path, color: string, rng: Rng, opts: F
  * Кромка среза (7.4): светлая полоска 1–2 px со стороны солнца и чуть более тёмная —
  * с противоположной. `sun` — направление НА солнце (единичный вектор).
  */
-export function cutEdge(ctx: Ctx, path: Path, sun: Pt, opts: { light?: number; dark?: number; width?: number } = {}): void {
+export function cutEdge(
+  ctx: Ctx,
+  path: Path,
+  sun: Pt,
+  opts: { light?: number; dark?: number; width?: number } = {},
+): void {
   const w = opts.width ?? 2;
   ctx.save();
   tracePath(ctx, path);
@@ -508,10 +544,8 @@ export function paperWord(text: string, style: WordStyle): HTMLCanvasElement {
     g.strokeText(ch, glyph.width / 2, size * 1.1);
     g.fillStyle = color;
     g.fillText(ch, glyph.width / 2, size * 1.1);
-    // волокно на букве
-    g.globalCompositeOperation = 'source-atop';
-    applyGrain(g, glyph.width, glyph.height, 0.1, 64);
-    g.globalCompositeOperation = 'source-over';
+    // волокно на букве — только на самой букве, а не на прямоугольнике холста
+    grainInside(glyph, 0.1, 64);
     const sh = silhouetteShadow(glyph, size * 0.05, style.shadow);
     ctx.save();
     ctx.translate(cx, baseY - size * 0.55 + dy);
@@ -534,7 +568,14 @@ export function hashString(s: string): number {
 }
 
 /** Бумажный пузырь реплики (7.4). */
-export function bubble(ctx: Ctx, w: number, h: number, tail: 'left' | 'right' | 'down', rng: Rng, fill = '#fbfaf5'): void {
+export function bubble(
+  ctx: Ctx,
+  w: number,
+  h: number,
+  tail: 'left' | 'right' | 'down',
+  rng: Rng,
+  fill = '#fbfaf5',
+): void {
   const r = Math.min(18, h * 0.3);
   const body: Path = [];
   const pts = 40;
@@ -565,7 +606,14 @@ export function bubble(ctx: Ctx, w: number, h: number, tail: 'left' | 'right' | 
  * Бумажный след сапога (7.4): подошва с округлым носком, узким подъёмом и отдельным
  * каблуком. Возвращает два контура — подошву и каблук — в координатах (x, y), носок вверх.
  */
-export function bootPrint(ctx: Ctx, x: number, y: number, size: number, angle: number, mirror: boolean): Path[] {
+export function bootPrint(
+  ctx: Ctx,
+  x: number,
+  y: number,
+  size: number,
+  angle: number,
+  mirror: boolean,
+): Path[] {
   void ctx;
   const sole: Path = [];
   const n = 28;
@@ -575,7 +623,10 @@ export function bootPrint(ctx: Ctx, x: number, y: number, size: number, angle: n
     const c = Math.cos(t);
     const sn = Math.sin(t);
     const w = size * (sn < 0 ? 0.3 : 0.23 + 0.04 * sn);
-    sole.push({ x: c * w + (sn < 0 ? size * 0.03 * Math.cos(t * 2) : 0), y: -size * 0.12 + sn * size * 0.33 });
+    sole.push({
+      x: c * w + (sn < 0 ? size * 0.03 * Math.cos(t * 2) : 0),
+      y: -size * 0.12 + sn * size * 0.33,
+    });
   }
   const heel: Path = [];
   for (let i = 0; i < 20; i++) {

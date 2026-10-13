@@ -68,10 +68,13 @@ describe('генератор уровня (раздел 5)', () => {
           expect(isFloe(g.cells[f])).toBe(true);
           expect(aOf(g, f)).toBeGreaterThanOrEqual(balance.gen.fishMinRow);
         }
-        for (let i = 0; i < 3; i++) for (let j = i + 1; j < 3; j++) expect(chebyshev(g, r.fish[i], r.fish[j])).toBeGreaterThanOrEqual(2);
+        for (let i = 0; i < 3; i++)
+          for (let j = i + 1; j < 3; j++)
+            expect(chebyshev(g, r.fish[i], r.fish[j])).toBeGreaterThanOrEqual(2);
         expect(r.fish.some((f) => g.cells[f] === 'thin')).toBe(true);
         // Дилемма (если требования не ослаблены).
-        if (r.relax === 0) expect(r.fishRouteBound - r.shortestCrossing).toBeGreaterThanOrEqual(balance.gen.dilemmaCharges);
+        if (r.relax === 0)
+          expect(r.fishRouteBound - r.shortestCrossing).toBeGreaterThanOrEqual(balance.gen.dilemmaCharges);
         // Решение: простой путь через всех рыб к берегу без красных прыжков.
         const path = r.solution;
         expect(path[0]).toBe(r.bridge);
@@ -82,7 +85,9 @@ describe('генератор уровня (раздел 5)', () => {
           const j = jumpTargets(g, path[i - 1]).find((x) => x.to === path[i]);
           expect(j).toBeTruthy();
           if (!j) continue;
-          expect(freshJumpRisk(g.cells[path[i - 1]], j.cost, level, { tMedMs: 5000, p: 0.8 }).level).not.toBe('fail');
+          expect(freshJumpRisk(g.cells[path[i - 1]], j.cost, level, { tMedMs: 5000, p: 0.8 }).level).not.toBe(
+            'fail',
+          );
         }
       }
       // Ослабление требований — редкое исключение.
@@ -111,6 +116,14 @@ describe('генератор уровня (раздел 5)', () => {
     cells[index(ok.grid, 3, 0)] = 'water';
     cells[index(ok.grid, 1, 2)] = 'water';
     const grid = { ...ok.grid, cells };
-    expect(solveLevel(grid, ok.bridge === index(ok.grid, 0, 1) ? index(ok.grid, 0, 2) : ok.bridge, [pocket, ...ok.fish.slice(1)], lv, 5000).path).toBeNull();
+    expect(
+      solveLevel(
+        grid,
+        ok.bridge === index(ok.grid, 0, 1) ? index(ok.grid, 0, 2) : ok.bridge,
+        [pocket, ...ok.fish.slice(1)],
+        lv,
+        5000,
+      ).path,
+    ).toBeNull();
   });
 });

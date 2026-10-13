@@ -55,13 +55,23 @@ export class BankView {
     const depth = 3.6;
     const portrait = o.orient === 'portrait';
     const bridgeL = lOf(s.grid, s.bridge);
-    const near = this.art.bank({ side: 'near', length: L, extra, depth, bridgeL }, this.seed ^ 0x51, !portrait);
+    const near = this.art.bank(
+      { side: 'near', length: L, extra, depth, bridgeL },
+      this.seed ^ 0x51,
+      !portrait,
+    );
     const far = this.art.bank({ side: 'far', length: L, extra, depth }, this.seed ^ 0x77, !portrait);
     this.nearKey = near.texture;
     this.farKey = far.texture;
     const canvasH = depth * c;
-    this.near = this.scene.add.image(0, 0, near.texture).setOrigin(0, 0).setScale(1 / this.art.s);
-    this.far = this.scene.add.image(0, 0, far.texture).setOrigin(0, 0).setScale(1 / this.art.s);
+    this.near = this.scene.add
+      .image(0, 0, near.texture)
+      .setOrigin(0, 0)
+      .setScale(1 / this.art.s);
+    this.far = this.scene.add
+      .image(0, 0, far.texture)
+      .setOrigin(0, 0)
+      .setScale(1 / this.art.s);
     if (portrait) {
       this.near.setPosition(-extra * c, (H - 1) * c - 8);
       this.far.setPosition(-extra * c, c + 14 - canvasH);
@@ -99,9 +109,21 @@ export class BankView {
       if (Math.abs(l - bridgeL) < 1.2) l += 2.2;
       add(K.reed(i % 3), 0.3 + rng() * 0.1, l, 0.85 + rng() * 0.3, false);
     }
-    const nearPines = [L + 0.6 + rng() * 0.8, -1.4 - rng() * 0.8, L * (0.55 + rng() * 0.3)];
-    nearPines.forEach((l, i) => add(K.pine(Math.floor(rng() * PINE_VARIANTS)), nearMarginA - 0.2 - (i === 2 ? 0.3 : 0), l, 0.62 + rng() * 0.2));
-    add(K.drift(0), nearMarginA, L * 0.3 + rng(), 1);
+    // Высокие предметы на ближнем берегу не ставим перед мостками: там стоит герой.
+    const clearOfBridge = (l: number) => {
+      if (Math.abs(l - bridgeL) >= 2) return l;
+      return bridgeL + 2.4 <= L - 0.4 ? bridgeL + 2.4 : bridgeL - 2.4;
+    };
+    const nearPines = [L + 0.6 + rng() * 0.8, -1.4 - rng() * 0.8, clearOfBridge(L * (0.55 + rng() * 0.3))];
+    nearPines.forEach((l, i) =>
+      add(
+        K.pine(Math.floor(rng() * PINE_VARIANTS)),
+        nearMarginA - 0.2 - (i === 2 ? 0.3 : 0),
+        l,
+        0.62 + rng() * 0.2,
+      ),
+    );
+    add(K.drift(0), nearMarginA, clearOfBridge(L * 0.3 + rng()), 1);
 
     // Дальний берег: сосны вдоль, избушка, санки, сугробы.
     const farA = H - 1 + (portrait ? 0.36 : 0.85);
@@ -112,7 +134,12 @@ export class BankView {
     const pineSpots = [-1.8, -0.7, 0.5, hutL - 2.6, hutL + 2.3, L - 0.3, L + 1, L + 2.2];
     for (const l of pineSpots) {
       if (Math.abs(l - hutL) < 1.6) continue;
-      add(K.pine(Math.floor(rng() * PINE_VARIANTS)), farA + 0.15 + rng() * 0.3, l + (rng() - 0.5) * 0.4, 0.95 + rng() * 0.4);
+      add(
+        K.pine(Math.floor(rng() * PINE_VARIANTS)),
+        farA + 0.15 + rng() * 0.3,
+        l + (rng() - 0.5) * 0.4,
+        0.95 + rng() * 0.4,
+      );
     }
     for (let i = 0; i < 3; i++) add(K.reed(i % 3), H - 1 - 0.32, -1 + rng() * (L + 1), 0.8, false);
 
@@ -151,7 +178,10 @@ export class BankView {
       const info = this.art.hutInfo;
       const left = h.x - h.displayWidth * h.originX;
       const top = h.y - h.displayHeight * h.originY;
-      this.windowPoint = { x: left + info.window.x * h.displayWidth, y: top + info.window.y * h.displayHeight };
+      this.windowPoint = {
+        x: left + info.window.x * h.displayWidth,
+        y: top + info.window.y * h.displayHeight,
+      };
       this.windowGlow.setPosition(this.windowPoint.x, this.windowPoint.y);
       this.hutGlow.setPosition(this.windowPoint.x, this.windowPoint.y);
       this.smoke.setPosition(left + info.chimney.x * h.displayWidth, top + info.chimney.y * h.displayHeight);
@@ -179,7 +209,13 @@ export class BankView {
   /** Окно вспыхивает ярче — победа (9.2). */
   flashWindow(): void {
     if (!this.windowGlow) return;
-    this.scene.tweens.add({ targets: this.windowGlow, scale: this.windowGlow.scale * 1.5, yoyo: true, duration: 280, ease: 'Sine.Out' });
+    this.scene.tweens.add({
+      targets: this.windowGlow,
+      scale: this.windowGlow.scale * 1.5,
+      yoyo: true,
+      duration: 280,
+      ease: 'Sine.Out',
+    });
   }
 
   /** Точка у избушки, куда бежит герой после победы. */

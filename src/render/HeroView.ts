@@ -27,7 +27,19 @@ interface Pose {
 /** Герой чуть крупнее клетки-нормы, чтобы читался на телефоне. */
 const HERO_SCALE = 1.15;
 
-const REST: Pose = { lean: 0, squash: 1, lift: 0, bodyRot: 0, headRot: 0, armL: 0.15, armR: -0.1, legL: 0, legR: 0, scarf: 0, jitter: 0 };
+const REST: Pose = {
+  lean: 0,
+  squash: 1,
+  lift: 0,
+  bodyRot: 0,
+  headRot: 0,
+  armL: 0.15,
+  armR: -0.1,
+  legL: 0,
+  legR: 0,
+  scarf: 0,
+  jitter: 0,
+};
 
 type Mode = 'idle' | 'jump' | 'fall' | 'win' | 'cold' | 'trapped';
 
@@ -125,8 +137,34 @@ export class HeroView {
     const icicles = img(K.hero.icicles, RIG.icicles.x, RIG.icicles.y).setVisible(false);
     const headGroup = this.scene.add.container(RIG.head.x, RIG.head.y, [head, icicles, hat]);
     const armR = img(K.hero.armR, RIG.armR.x, RIG.armR.y);
-    const root = this.scene.add.container(0, 0, [armL, basket, ...tails, legL, legR, body, scarfTail, scarf, headGroup, armR]);
-    return { root, legL, legR, body, basket, tails, armL, armR, scarf, scarfTail, headGroup, head, hat, icicles };
+    const root = this.scene.add.container(0, 0, [
+      armL,
+      basket,
+      ...tails,
+      legL,
+      legR,
+      body,
+      scarfTail,
+      scarf,
+      headGroup,
+      armR,
+    ]);
+    return {
+      root,
+      legL,
+      legR,
+      body,
+      basket,
+      tails,
+      armL,
+      armR,
+      scarf,
+      scarfTail,
+      headGroup,
+      head,
+      hat,
+      icicles,
+    };
   }
 
   // ───────────────────────────── команды ─────────────────────────────
@@ -266,7 +304,13 @@ export class HeroView {
           this.rig.root.setAlpha(0);
         } else if (t < 260 + climb) {
           const k = (t - 260) / climb;
-          pose = { ...REST, squash: 0.6 + 0.4 * k, armL: 2.4 - k * 2, armR: -2.2 + k * 2, lean: -0.15 * this.facing };
+          pose = {
+            ...REST,
+            squash: 0.6 + 0.4 * k,
+            armL: 2.4 - k * 2,
+            armR: -2.2 + k * 2,
+            lean: -0.15 * this.facing,
+          };
           this.rig.root.setAlpha(1);
           if (this.hatFloat) {
             this.hatFloat.destroy();
@@ -297,7 +341,15 @@ export class HeroView {
           y = a.y + (b.y - a.y) * k;
           this.facing = b.x < a.x ? -1 : 1;
           const step = Math.sin(tq * 20);
-          pose = { ...REST, lean: 0.15 * this.facing, legL: step * 0.6, legR: -step * 0.6, armL: -step * 0.8, armR: step * 0.8, lift: Math.abs(step) * -3 };
+          pose = {
+            ...REST,
+            lean: 0.15 * this.facing,
+            legL: step * 0.6,
+            legR: -step * 0.6,
+            armL: -step * 0.8,
+            armR: step * 0.8,
+            lift: Math.abs(step) * -3,
+          };
           if (k >= 1) this.pos = { ...b };
           else this.pos = { x, y };
         }
@@ -305,7 +357,15 @@ export class HeroView {
       }
       case 'cold': {
         // сидит на обломке, кутается в шарф, зуб на зуб не попадает
-        pose = { ...REST, squash: 0.78, armL: -1.1, armR: 1.0, headRot: 0.12, jitter: reducedMotion ? 0 : 1.2, scarf: 0.3 };
+        pose = {
+          ...REST,
+          squash: 0.78,
+          armL: -1.1,
+          armR: 1.0,
+          headRot: 0.12,
+          jitter: reducedMotion ? 0 : 1.2,
+          scarf: 0.3,
+        };
         break;
       }
       case 'trapped': {
@@ -340,21 +400,47 @@ export class HeroView {
     if (this.crackStage >= 3) {
       // размахивает руками и смотрит вниз
       const w = Math.sin(tq * 16);
-      return { ...REST, armL: 1.6 + w * 0.9, armR: -1.6 - w * 0.9, headRot: 0.32, lean: w * 0.05 * calm, jitter: 0.6 * calm };
+      return {
+        ...REST,
+        armL: 1.6 + w * 0.9,
+        armR: -1.6 - w * 0.9,
+        headRot: 0.32,
+        lean: w * 0.05 * calm,
+        jitter: 0.6 * calm,
+      };
     }
     if (this.ready) {
       // притоптывает и смотрит на игрока
       const st = Math.floor(tq * 4) % 2;
-      return { ...REST, legL: st ? -0.25 : 0, legR: st ? 0 : 0.25, lift: st ? -2 * calm : 0, headRot: -0.12, armR: -0.4 };
+      return {
+        ...REST,
+        legL: st ? -0.25 : 0,
+        legR: st ? 0 : 0.25,
+        lift: st ? -2 * calm : 0,
+        headRot: -0.12,
+        armR: -0.4,
+      };
     }
     if (this.thin) {
       // пружинит, руки в стороны
       const b = Math.sin(tq * 9);
-      return { ...REST, squash: 1 + b * 0.035 * calm, armL: 1.15 + b * 0.12, armR: -1.1 - b * 0.12, lean: Math.sin(tq * 2.3) * 0.04 * calm };
+      return {
+        ...REST,
+        squash: 1 + b * 0.035 * calm,
+        armL: 1.15 + b * 0.12,
+        armR: -1.1 - b * 0.12,
+        lean: Math.sin(tq * 2.3) * 0.04 * calm,
+      };
     }
     // балансирует и переминается
     const shift = Math.sin(tq * 2.1);
-    const pose: Pose = { ...REST, lean: shift * 0.035 * calm, armL: 0.18 + shift * 0.08, armR: -0.12 - shift * 0.08, headRot: Math.sin(tq * 1.3) * 0.05 };
+    const pose: Pose = {
+      ...REST,
+      lean: shift * 0.035 * calm,
+      armL: 0.18 + shift * 0.08,
+      armR: -0.12 - shift * 0.08,
+      headRot: Math.sin(tq * 1.3) * 0.05,
+    };
     if (this.warmth <= 1) pose.jitter = reducedMotion ? 0 : 0.9; // дрожит
     return pose;
   }

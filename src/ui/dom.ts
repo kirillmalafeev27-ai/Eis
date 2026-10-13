@@ -12,7 +12,12 @@ export function el<K extends keyof HTMLElementTagNameMap>(
   return e;
 }
 
-export function button(text: string, cls: string, onClick: () => void, attrs: Record<string, string> = {}): HTMLButtonElement {
+export function button(
+  text: string,
+  cls: string,
+  onClick: () => void,
+  attrs: Record<string, string> = {},
+): HTMLButtonElement {
   const b = el('button', `paper-btn ${cls}`, { type: 'button', ...attrs }, [text]);
   b.addEventListener('click', onClick);
   return b;

@@ -43,7 +43,13 @@ export class AtlasBuilder {
     if (this.shelfY + h > this.size) this.newPage();
     const page = this.pages.length - 1;
     ctx2d(this.pages[page]).drawImage(src, this.cursorX + this.pad, this.shelfY + this.pad);
-    this.frames.set(key, { page, x: this.cursorX + this.pad, y: this.shelfY + this.pad, w: src.width, h: src.height });
+    this.frames.set(key, {
+      page,
+      x: this.cursorX + this.pad,
+      y: this.shelfY + this.pad,
+      w: src.width,
+      h: src.height,
+    });
     this.cursorX += w;
     this.shelfH = Math.max(this.shelfH, h);
   }

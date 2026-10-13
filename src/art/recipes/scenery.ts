@@ -47,12 +47,17 @@ export function pine(rng: Rng, s: number, sun: Pt, size: number): Standing {
   const cx = c.width / 2;
   const base = c.height - 2 * s;
   // ствол
-  const trunk: Path = scissorCut(rng, [
-    { x: cx - 6 * s, y: base },
-    { x: cx - 4 * s, y: base - 34 * s },
-    { x: cx + 4 * s, y: base - 34 * s },
-    { x: cx + 6 * s, y: base },
-  ], 0.6 * s, 5 * s);
+  const trunk: Path = scissorCut(
+    rng,
+    [
+      { x: cx - 6 * s, y: base },
+      { x: cx - 4 * s, y: base - 34 * s },
+      { x: cx + 4 * s, y: base - 34 * s },
+      { x: cx + 6 * s, y: base },
+    ],
+    0.6 * s,
+    5 * s,
+  );
   paperFill(ctx, trunk, palette.wood.shade, rng, { tone: 0.04, blotches: 1 });
   const tiers = 4 + (size > 0.5 ? 1 : 0);
   const crownTop = base - h + 6 * s;
@@ -74,7 +79,11 @@ export function pine(rng: Rng, s: number, sun: Pt, size: number): Standing {
     }
     const p = scissorCut(rng, tier, 1 * s, 6 * s);
     softShadowUnder(ctx, p, sun, s, 4);
-    paperFill(ctx, p, mix(palette.pine.base, palette.pine.shade, rng() * 0.25), rng, { tone: 0.04, blotches: 2, grain: 0.07 });
+    paperFill(ctx, p, mix(palette.pine.base, palette.pine.shade, rng() * 0.25), rng, {
+      tone: 0.04,
+      blotches: 2,
+      grain: 0.07,
+    });
     // свет со стороны солнца — светлая половина яруса
     ctx.save();
     tracePath(ctx, p);
@@ -96,11 +105,17 @@ export function pine(rng: Rng, s: number, sun: Pt, size: number): Standing {
     const n = 9;
     for (let i = 0; i <= n; i++) {
       const u = i / n;
-      snow.push({ x: cx - sw + 2 * sw * u, y: sy + Math.abs(u - 0.5) * (yBot - yTop) * 0.7 + (rng() - 0.3) * 2 * s });
+      snow.push({
+        x: cx - sw + 2 * sw * u,
+        y: sy + Math.abs(u - 0.5) * (yBot - yTop) * 0.7 + (rng() - 0.3) * 2 * s,
+      });
     }
     for (let i = n; i >= 0; i--) {
       const u = i / n;
-      snow.push({ x: cx - sw + 2 * sw * u, y: sy + Math.abs(u - 0.5) * (yBot - yTop) * 0.7 + (5 + rng() * 5) * s * (1 - Math.abs(u - 0.5)) });
+      snow.push({
+        x: cx - sw + 2 * sw * u,
+        y: sy + Math.abs(u - 0.5) * (yBot - yTop) * 0.7 + (5 + rng() * 5) * s * (1 - Math.abs(u - 0.5)),
+      });
     }
     const sp = scissorCut(rng, snow, 0.8 * s, 4 * s);
     paperFill(ctx, sp, palette.snow.base, rng, { tone: 0.02, blotches: 0, grain: 0.04 });
@@ -126,14 +141,24 @@ export function hut(rng: Rng, s: number, sun: Pt): Standing & { window: Pt; chim
   const wallTop = base - wallH;
   // труба (за крышей)
   const chimX = cx + 26 * s;
-  const chim: Path = scissorCut(rng, [
-    { x: chimX - 8 * s, y: wallTop - 58 * s },
-    { x: chimX + 8 * s, y: wallTop - 58 * s },
-    { x: chimX + 8 * s, y: wallTop - 20 * s },
-    { x: chimX - 8 * s, y: wallTop - 20 * s },
-  ], 0.6 * s, 5 * s);
+  const chim: Path = scissorCut(
+    rng,
+    [
+      { x: chimX - 8 * s, y: wallTop - 58 * s },
+      { x: chimX + 8 * s, y: wallTop - 58 * s },
+      { x: chimX + 8 * s, y: wallTop - 20 * s },
+      { x: chimX - 8 * s, y: wallTop - 20 * s },
+    ],
+    0.6 * s,
+    5 * s,
+  );
   paperFill(ctx, chim, mix(palette.wood.shade, '#6b6f78', 0.5), rng, { tone: 0.05, blotches: 1 });
-  const chimSnow = scissorCut(rng, blobPath(rng, chimX, wallTop - 59 * s, 11 * s, 4 * s, 12, 0.2), 0.6 * s, 4 * s);
+  const chimSnow = scissorCut(
+    rng,
+    blobPath(rng, chimX, wallTop - 59 * s, 11 * s, 4 * s, 12, 0.2),
+    0.6 * s,
+    4 * s,
+  );
   paperFill(ctx, chimSnow, palette.snow.base, rng, { tone: 0.02, blotches: 0 });
   // стены — брёвна
   const wall: Path = [
@@ -146,13 +171,21 @@ export function hut(rng: Rng, s: number, sun: Pt): Standing & { window: Pt; chim
   const logs = 6;
   for (let i = 0; i < logs; i++) {
     const y0 = wallTop + (wallH / logs) * i;
-    const log: Path = scissorCut(rng, [
-      { x: cx - wallW / 2 - 4 * s, y: y0 + 1 * s },
-      { x: cx + wallW / 2 + 4 * s, y: y0 + (rng() - 0.5) * 1.5 * s },
-      { x: cx + wallW / 2 + 4 * s, y: y0 + wallH / logs },
-      { x: cx - wallW / 2 - 4 * s, y: y0 + wallH / logs + (rng() - 0.5) * 1.5 * s },
-    ], 0.6 * s, 6 * s);
-    paperFill(ctx, log, mix(palette.wood.base, palette.wood.shade, i % 2 ? 0.15 : 0), rng, { tone: 0.05, blotches: 2 });
+    const log: Path = scissorCut(
+      rng,
+      [
+        { x: cx - wallW / 2 - 4 * s, y: y0 + 1 * s },
+        { x: cx + wallW / 2 + 4 * s, y: y0 + (rng() - 0.5) * 1.5 * s },
+        { x: cx + wallW / 2 + 4 * s, y: y0 + wallH / logs },
+        { x: cx - wallW / 2 - 4 * s, y: y0 + wallH / logs + (rng() - 0.5) * 1.5 * s },
+      ],
+      0.6 * s,
+      6 * s,
+    );
+    paperFill(ctx, log, mix(palette.wood.base, palette.wood.shade, i % 2 ? 0.15 : 0), rng, {
+      tone: 0.05,
+      blotches: 2,
+    });
     ctx.save();
     tracePath(ctx, log);
     ctx.clip();
@@ -173,12 +206,17 @@ export function hut(rng: Rng, s: number, sun: Pt): Standing & { window: Pt; chim
     }
   }
   // дверь
-  const door: Path = scissorCut(rng, [
-    { x: cx - 34 * s, y: base - 44 * s },
-    { x: cx - 14 * s, y: base - 44 * s },
-    { x: cx - 14 * s, y: base },
-    { x: cx - 34 * s, y: base },
-  ], 0.5 * s, 4 * s);
+  const door: Path = scissorCut(
+    rng,
+    [
+      { x: cx - 34 * s, y: base - 44 * s },
+      { x: cx - 14 * s, y: base - 44 * s },
+      { x: cx - 14 * s, y: base },
+      { x: cx - 34 * s, y: base },
+    ],
+    0.5 * s,
+    4 * s,
+  );
   paperFill(ctx, door, palette.wood.shade, rng, { tone: 0.04, blotches: 1 });
   ctx.fillStyle = rgba(palette.windowLight, 0.9);
   ctx.beginPath();
@@ -212,7 +250,12 @@ export function hut(rng: Rng, s: number, sun: Pt): Standing & { window: Pt; chim
   ctx.fillRect(win.x - 1.4 * s, win.y - wh / 2, 2.8 * s, wh);
   ctx.fillRect(win.x - ww / 2, win.y - 1.4 * s, ww, 2.8 * s);
   // снег на подоконнике
-  const sill = scissorCut(rng, blobPath(rng, win.x, win.y + wh / 2 + 4 * s, ww * 0.62, 3.2 * s, 12, 0.2), 0.5 * s, 3 * s);
+  const sill = scissorCut(
+    rng,
+    blobPath(rng, win.x, win.y + wh / 2 + 4 * s, ww * 0.62, 3.2 * s, 12, 0.2),
+    0.5 * s,
+    3 * s,
+  );
   paperFill(ctx, sill, palette.snow.base, rng, { tone: 0.02, blotches: 0 });
   // крыша — толстая снежная подушка с голубой тенью
   const roofL = cx - wallW / 2 - 16 * s;
@@ -259,10 +302,21 @@ export function hut(rng: Rng, s: number, sun: Pt): Standing & { window: Pt; chim
     ctx.fill();
   }
   // сугроб у стены
-  const drift = scissorCut(rng, blobPath(rng, cx + 6 * s, base - 1 * s, wallW * 0.62, 9 * s, 22, 0.3), 1 * s, 5 * s);
+  const drift = scissorCut(
+    rng,
+    blobPath(rng, cx + 6 * s, base - 1 * s, wallW * 0.62, 9 * s, 22, 0.3),
+    1 * s,
+    5 * s,
+  );
   paperFill(ctx, drift, palette.snow.base, rng, { tone: 0.02, blotches: 1 });
   cutEdge(ctx, drift, sun, { light: 0.9, dark: 0.18, width: 1.4 * s });
-  return { canvas: c, ox: 0.5, oy: (base - 2 * s) / H, window: { x: win.x / W, y: win.y / H }, chimney: { x: chimX / W, y: (wallTop - 60 * s) / H } };
+  return {
+    canvas: c,
+    ox: 0.5,
+    oy: (base - 2 * s) / H,
+    window: { x: win.x / W, y: win.y / H },
+    chimney: { x: chimX / W, y: (wallTop - 60 * s) / H },
+  };
 }
 
 /** Мягкий ореол тёплого окна (8.1.3): заранее размытый, кладётся аддитивно. */
@@ -303,12 +357,17 @@ export function sled(rng: Rng, s: number, sun: Pt): Standing {
     ctx.lineWidth = 2.4 * s;
     ctx.stroke();
   }
-  const seat: Path = scissorCut(rng, [
-    { x: 12 * s, y: base - 20 * s },
-    { x: W - 16 * s, y: base - 20 * s },
-    { x: W - 18 * s, y: base - 13 * s },
-    { x: 14 * s, y: base - 13 * s },
-  ], 0.5 * s, 5 * s);
+  const seat: Path = scissorCut(
+    rng,
+    [
+      { x: 12 * s, y: base - 20 * s },
+      { x: W - 16 * s, y: base - 20 * s },
+      { x: W - 18 * s, y: base - 13 * s },
+      { x: 14 * s, y: base - 13 * s },
+    ],
+    0.5 * s,
+    5 * s,
+  );
   paperFill(ctx, seat, palette.wood.base, rng, { tone: 0.05, blotches: 1 });
   cutEdge(ctx, seat, sun, { light: 0.6, dark: 0.25, width: 1.3 * s });
   const sn = scissorCut(rng, blobPath(rng, 36 * s, base - 22 * s, 18 * s, 4 * s, 12, 0.3), 0.5 * s, 3 * s);
@@ -322,7 +381,12 @@ export function snowDrift(rng: Rng, s: number, sun: Pt): Standing {
   const H = 30 * s;
   const c = makeCanvas(W + 8 * s, H + 8 * s);
   const ctx = ctx2d(c);
-  const p = scissorCut(rng, blobPath(rng, c.width / 2, c.height - 12 * s, W / 2, 10 * s, 20, 0.3), 1 * s, 5 * s);
+  const p = scissorCut(
+    rng,
+    blobPath(rng, c.width / 2, c.height - 12 * s, W / 2, 10 * s, 20, 0.3),
+    1 * s,
+    5 * s,
+  );
   ctx.save();
   ctx.beginPath();
   ctx.rect(0, 0, c.width, c.height - 12 * s);

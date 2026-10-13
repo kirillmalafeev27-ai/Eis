@@ -200,7 +200,14 @@ export class FloeView {
     if (!art) return;
     if (stage <= 3) {
       f.crack.stage = stage;
-      drawCracks(f.crack.tex.canvas, art.top, f.crack.lines, stage, mulberry32(f.crack.seed + stage), this.art.s);
+      drawCracks(
+        f.crack.tex.canvas,
+        art.top,
+        f.crack.lines,
+        stage,
+        mulberry32(f.crack.seed + stage),
+        this.art.s,
+      );
       f.crack.tex.refresh();
       f.sagVel += 30 * stage;
       return;
@@ -214,7 +221,15 @@ export class FloeView {
     if (!src) return;
     const s = this.art.s;
     const center = { x: FLOE_CANVAS.cx * s, y: FLOE_CANVAS.cy * s };
-    const pieces = cutPieces(src, f.crack.tex.canvas, f.crack.lines, center, mulberry32(f.crack.seed + 99), s, count);
+    const pieces = cutPieces(
+      src,
+      f.crack.tex.canvas,
+      f.crack.lines,
+      center,
+      mulberry32(f.crack.seed + 99),
+      s,
+      count,
+    );
     if (!pieces.length) return;
     f.img.setVisible(false);
     f.crack.img.setVisible(false);
@@ -242,7 +257,11 @@ export class FloeView {
    * Утопить льдину. 'left' — покинутая героем (раскол и уход под воду за 300 мс),
    * 'melt' — растворяется с пузырями, 'break' — развал под героем, 'quiet' — без шума.
    */
-  sink(f: Floe | number, mode: 'left' | 'melt' | 'break' | 'quiet', onBubble?: (x: number, y: number) => void): void {
+  sink(
+    f: Floe | number,
+    mode: 'left' | 'melt' | 'break' | 'quiet',
+    onBubble?: (x: number, y: number) => void,
+  ): void {
     const floe = typeof f === 'number' ? this.floes.get(f) : f;
     if (!floe || floe.dying) return;
     floe.dying = true;
@@ -252,7 +271,14 @@ export class FloeView {
       if (!floe.crack) this.startCracks(floe);
       const art = this.art.floe(floe.key);
       if (floe.crack && art) {
-        drawCracks(floe.crack.tex.canvas, art.top, floe.crack.lines, 3, mulberry32(floe.crack.seed + 3), this.art.s);
+        drawCracks(
+          floe.crack.tex.canvas,
+          art.top,
+          floe.crack.lines,
+          3,
+          mulberry32(floe.crack.seed + 3),
+          this.art.s,
+        );
         floe.crack.tex.refresh();
       }
       this.split(floe, mode === 'left' ? 2 : 3, mode === 'left' ? 6 : balance.anim.splitDriftPx);
@@ -376,7 +402,8 @@ export class FloeView {
       // Покачивание: тонкие сильнее толстых; на «меньше движения» — тише.
       const amp = reducedMotion ? f.bobAmp * 0.3 : f.bobAmp;
       const bob = Math.sin((t * Math.PI * 2 * 1000) / balance.anim.floeBobMs + f.phase) * amp;
-      const roll = Math.sin((t * Math.PI * 2 * 1000) / (balance.anim.floeBobMs * 1.37) + f.phase * 1.3) * amp * 0.006;
+      const roll =
+        Math.sin((t * Math.PI * 2 * 1000) / (balance.anim.floeBobMs * 1.37) + f.phase * 1.3) * amp * 0.006;
       // Досягаемые приподняты.
       const wantLift = lifting && this.reach.has(f.cell) ? balance.anim.reachLiftPx : 0;
       f.lift += (wantLift - f.lift) * Math.min(1, dt * 10);

@@ -24,7 +24,12 @@ export function sampleAnswer(rng: Rng, pace: Pace, model: AnswerModel = defaultA
 }
 
 /** Время до k-го верного ответа (момент прыжка), начиная с появления вопроса. */
-export function timeToCorrect(rng: Rng, k: number, pace: Pace, model: AnswerModel = defaultAnswerModel): number {
+export function timeToCorrect(
+  rng: Rng,
+  k: number,
+  pace: Pace,
+  model: AnswerModel = defaultAnswerModel,
+): number {
   let t = 0;
   let got = 0;
   for (let guard = 0; guard < 1000 && got < k; guard++) {

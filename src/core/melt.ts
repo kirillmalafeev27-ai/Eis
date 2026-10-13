@@ -45,7 +45,10 @@ export function meltCandidates(s: GameState, strength: number): MeltCandidate[] 
     if (!isFloe(kind)) continue;
     if (c === s.hero.cell || reach.has(c) || s.sinkAt[c] >= 0) continue;
     if (fishCells.has(c) && strength < balance.rules.fishMeltStrength) continue;
-    out.push({ cell: c, weight: kind === 'thin' ? balance.rules.meltWeightThin : balance.rules.meltWeightThick });
+    out.push({
+      cell: c,
+      weight: kind === 'thin' ? balance.rules.meltWeightThin : balance.rules.meltWeightThick,
+    });
   }
   return out;
 }
@@ -53,6 +56,7 @@ export function meltCandidates(s: GameState, strength: number): MeltCandidate[] 
 /** Сетка, в которой намокающие льдины уже утонули (для проверки честности). */
 export function gridWithWetSunk(s: GameState): Grid {
   const changes: [number, 'water'][] = [];
-  for (let c = 0; c < s.sinkAt.length; c++) if (s.sinkAt[c] >= 0 && c !== s.hero.cell) changes.push([c, 'water']);
+  for (let c = 0; c < s.sinkAt.length; c++)
+    if (s.sinkAt[c] >= 0 && c !== s.hero.cell) changes.push([c, 'water']);
   return changes.length ? withCells(s.grid, changes) : s.grid;
 }

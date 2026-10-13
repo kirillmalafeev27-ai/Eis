@@ -10,7 +10,9 @@ export class TutorialBubble {
 
   constructor(parent: HTMLElement, text: string, at: { x: number; y: number }, onClose: () => void) {
     const ok = button(ru.tutorial.ok, 'paper-btn-small paper-btn-primary', onClose);
-    this.root = el('div', 'tut', { role: 'dialog', 'aria-live': 'assertive' }, [el('div', 'tut-bubble', {}, [el('p', '', {}, [text]), ok])]);
+    this.root = el('div', 'tut', { role: 'dialog', 'aria-live': 'assertive' }, [
+      el('div', 'tut-bubble', {}, [el('p', '', {}, [text]), ok]),
+    ]);
     parent.appendChild(this.root);
     const host = parent.getBoundingClientRect();
     const bubble = this.root.firstElementChild as HTMLElement;

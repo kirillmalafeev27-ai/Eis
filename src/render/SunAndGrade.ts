@@ -65,7 +65,13 @@ export class SunAndGrade {
     this.useFilters = filters && webgl;
     if (this.useFilters) {
       this.cm = this.camera.filters.internal.addColorMatrix();
-      this.vig = this.camera.filters.external.addVignette(0.5, 0.5, balance.light.vignetteRadius, balance.light.vignetteStrengthDay, hex(palette.shadow));
+      this.vig = this.camera.filters.external.addVignette(
+        0.5,
+        0.5,
+        balance.light.vignetteRadius,
+        balance.light.vignetteStrengthDay,
+        hex(palette.shadow),
+      );
     } else {
       this.fbRect = this.scene.add.rectangle(0, 0, 10, 10, 0xffffff, 1).setOrigin(0, 0);
       this.fbRect.setBlendMode(Phaser.BlendModes.MULTIPLY);

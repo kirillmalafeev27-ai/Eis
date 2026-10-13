@@ -56,6 +56,8 @@ export class QuestionPanel {
   private timers: number[] = [];
   private reducedMotion = false;
   private destroyed = false;
+  /** Звуки панели: шорох верного ответа, «бонк» ошибки, перелистывание (9.2, 10.2). */
+  onSound: ((name: 'correct' | 'wrong' | 'flip') => void) | null = null;
 
   constructor(
     parent: HTMLElement,
@@ -178,6 +180,7 @@ export class QuestionPanel {
       return;
     }
     // Перелистывание бумаги: старый лист уходит, новый появляется за flipMs.
+    this.onSound?.('flip');
     this.sheet.classList.add('qp-flip-out');
     this.later(this.timing.flipMs / 2, () => {
       this.sheet.classList.remove('qp-flip-out');
@@ -227,7 +230,11 @@ export class QuestionPanel {
     const min = this.timing.fontMinPx;
     let size = max;
     this.prompt.style.fontSize = `${size}px`;
-    while (size > min && (this.prompt.scrollWidth > this.prompt.clientWidth + 1 || this.prompt.scrollHeight > this.prompt.clientHeight + 1)) {
+    while (
+      size > min &&
+      (this.prompt.scrollWidth > this.prompt.clientWidth + 1 ||
+        this.prompt.scrollHeight > this.prompt.clientHeight + 1)
+    ) {
       size -= 1;
       this.prompt.style.fontSize = `${size}px`;
     }
@@ -235,10 +242,16 @@ export class QuestionPanel {
       const t = chip.querySelector('.qp-text') as HTMLElement;
       let s = Math.min(22, max);
       t.style.fontSize = `${s}px`;
+      // Сначала ужимаем так, чтобы самое длинное слово встало целиком
+      // (Lebensmittelgeschäft); рвать слово по слогам — только если не вышло и так.
+      t.style.overflowWrap = 'normal';
+      t.style.hyphens = 'manual';
       while (s > min - 2 && (t.scrollWidth > t.clientWidth + 1 || t.scrollHeight > t.clientHeight + 1)) {
         s -= 1;
         t.style.fontSize = `${s}px`;
       }
+      t.style.overflowWrap = '';
+      t.style.hyphens = '';
     }
   };
 
@@ -264,6 +277,7 @@ export class QuestionPanel {
     this.updateChips();
     this.provider.report({ id: q.id, correct, timeMs });
     this.onAnswer({ question: q, index: i, correct, timeMs });
+    this.onSound?.(correct ? 'correct' : 'wrong');
     if (correct) {
       chip.classList.add('is-correct');
       this.later(this.timing.correctGlowMs, () => void this.showNext(false));

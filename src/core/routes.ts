@@ -113,7 +113,13 @@ export function findRoute(env: RouteEnv, targets: number | readonly number[]): R
   }
 }
 
-function unwind(prev: (RouteStep | null)[], start: number, target: number, cost: number, thick: number): Route {
+function unwind(
+  prev: (RouteStep | null)[],
+  start: number,
+  target: number,
+  cost: number,
+  thick: number,
+): Route {
   const steps: RouteStep[] = [];
   let cur = target;
   while (cur !== start) {
@@ -179,7 +185,8 @@ export function chargeDistances(
   dist[from] = 0;
   for (;;) {
     let best = -1;
-    for (let i = 0; i < n; i++) if (!done[i] && dist[i] < Infinity && (best < 0 || dist[i] < dist[best])) best = i;
+    for (let i = 0; i < n; i++)
+      if (!done[i] && dist[i] < Infinity && (best < 0 || dist[i] < dist[best])) best = i;
     if (best < 0) break;
     done[best] = 1;
     if (best !== from && grid.cells[best] === 'far') continue;
@@ -193,7 +200,10 @@ export function chargeDistances(
 }
 
 /** Расстояние в зарядах до ближайшей клетки дальнего берега из каждой клетки. */
-export function distancesToFarBank(grid: Grid, allow?: (jump: Jump, takeoff: number) => boolean): Float64Array {
+export function distancesToFarBank(
+  grid: Grid,
+  allow?: (jump: Jump, takeoff: number) => boolean,
+): Float64Array {
   // Обратная Дейкстра: из каждой клетки считаем до берега, переворачивая рёбра.
   const n = grid.cells.length;
   const reverse: { from: number; cost: number }[][] = Array.from({ length: n }, () => []);
@@ -209,7 +219,8 @@ export function distancesToFarBank(grid: Grid, allow?: (jump: Jump, takeoff: num
   for (let c = 0; c < n; c++) if (grid.cells[c] === 'far') dist[c] = 0;
   for (;;) {
     let best = -1;
-    for (let i = 0; i < n; i++) if (!done[i] && dist[i] < Infinity && (best < 0 || dist[i] < dist[best])) best = i;
+    for (let i = 0; i < n; i++)
+      if (!done[i] && dist[i] < Infinity && (best < 0 || dist[i] < dist[best])) best = i;
     if (best < 0) break;
     done[best] = 1;
     for (const e of reverse[best]) {

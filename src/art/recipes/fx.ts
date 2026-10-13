@@ -31,7 +31,13 @@ export function footprint(rng: Rng, s: number, style: PrintStyle): HTMLCanvasEle
   const ctx = ctx2d(art);
   const [sole, heel] = bootPrint(ctx, W / 2, H / 2 - size * 0.02, size, 0, false);
   const color =
-    style === 'safe' ? palette.hints.safe : style === 'risky' ? palette.hints.risky : style === 'fail' ? palette.hints.fail : palette.shadow;
+    style === 'safe'
+      ? palette.hints.safe
+      : style === 'risky'
+        ? palette.hints.risky
+        : style === 'fail'
+          ? palette.hints.fail
+          : palette.shadow;
   const parts: Path[] = [scissorCut(rng, sole, 0.5 * s, 3 * s), scissorCut(rng, heel, 0.5 * s, 3 * s)];
   // Белая бумажная подложка — след читается и на тонком, и на толстом льду (7.7.5).
   for (const p of parts) {

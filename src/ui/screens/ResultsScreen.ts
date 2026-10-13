@@ -57,7 +57,9 @@ export class ResultsScreen {
       el('div', 'res-basket-art', {}, [el('div', 'res-basket-weave'), el('div', 'res-fish-row', {}, slots)]),
       el('div', 'res-fish-count', {}, [ru.results.fishCount(d.fish)]),
     ]);
-    const stars = [0, 1, 2].map((i) => el('span', i < d.stars ? 'res-star is-on' : 'res-star', { 'aria-hidden': 'true' }, ['★']));
+    const stars = [0, 1, 2].map((i) =>
+      el('span', i < d.stars ? 'res-star is-on' : 'res-star', { 'aria-hidden': 'true' }, ['★']),
+    );
     const rows: [string, string][] = [
       [ru.results.time, ru.results.seconds(d.timeMs)],
       [ru.results.jumps, String(d.jumps)],
@@ -67,13 +69,16 @@ export class ResultsScreen {
       [ru.results.wrong, String(d.wrong)],
       [ru.results.median, ru.results.seconds(d.medianMs)],
     ];
-    if (d.recordMs !== null) rows.push([ru.results.record, `${'★'.repeat(d.recordStars)} ${ru.results.seconds(d.recordMs)}`]);
+    if (d.recordMs !== null)
+      rows.push([ru.results.record, `${'★'.repeat(d.recordStars)} ${ru.results.seconds(d.recordMs)}`]);
     const title = d.won ? (d.knapp ? ru.results.knapp : ru.results.won) : ru.results.lost;
     const stats = el('div', 'res-card res-stats', {}, [
       el('h2', '', {}, [title]),
       el('div', 'res-stars', { 'aria-label': ru.stars(d.stars) }, stars),
       d.newRecord ? el('div', 'res-record', {}, [ru.results.newRecord]) : null,
-      d.cause ? el('p', 'res-cause', {}, [d.cause === 'cold' ? ru.results.causeCold : ru.results.causeTrapped]) : null,
+      d.cause
+        ? el('p', 'res-cause', {}, [d.cause === 'cold' ? ru.results.causeCold : ru.results.causeTrapped])
+        : null,
       el(
         'dl',
         'res-table',
@@ -86,9 +91,12 @@ export class ResultsScreen {
         button(ru.levels, 'paper-btn-small', handlers.levels),
       ]),
     ]);
-    this.root = el('div', 'screen screen-results', { role: 'dialog', 'aria-modal': 'true', 'aria-label': title }, [
-      el('div', 'res-cards', {}, [photo, basket, stats]),
-    ]);
+    this.root = el(
+      'div',
+      'screen screen-results',
+      { role: 'dialog', 'aria-modal': 'true', 'aria-label': title },
+      [el('div', 'res-cards', {}, [photo, basket, stats])],
+    );
     parent.appendChild(this.root);
     const cards = [photo, basket, stats];
     const step = reducedMotion ? 0 : balance.anim.resultCardDelayMs;

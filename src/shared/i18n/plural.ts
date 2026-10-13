@@ -1,7 +1,11 @@
 /** Склонение по числу через Intl.PluralRules (11.2.1). */
 const rules = new Map<string, Intl.PluralRules>();
 
-export function plural(locale: string, n: number, forms: Partial<Record<Intl.LDMLPluralRule, string>>): string {
+export function plural(
+  locale: string,
+  n: number,
+  forms: Partial<Record<Intl.LDMLPluralRule, string>>,
+): string {
   let r = rules.get(locale);
   if (!r) {
     r = new Intl.PluralRules(locale);

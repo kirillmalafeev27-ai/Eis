@@ -71,7 +71,15 @@ export function thinFloe(rng: Rng, s: number, sun: Pt): FloeArt {
   g.clip();
   // Тёмные «окна», где лёд тоньше и вода ближе.
   for (let i = 0; i < 3; i++) {
-    const p = blobPath(rng, cx + (rng() - 0.5) * 50 * s, cy + (rng() - 0.5) * 50 * s, (8 + rng() * 14) * s, (6 + rng() * 10) * s, 18, 0.35);
+    const p = blobPath(
+      rng,
+      cx + (rng() - 0.5) * 50 * s,
+      cy + (rng() - 0.5) * 50 * s,
+      (8 + rng() * 14) * s,
+      (6 + rng() * 10) * s,
+      18,
+      0.35,
+    );
     g.filter = `blur(${3 * s}px)`;
     tracePath(g, p);
     g.fillStyle = rgba(palette.thinIce.shade, 0.55);
@@ -79,7 +87,12 @@ export function thinFloe(rng: Rng, s: number, sun: Pt): FloeArt {
     g.filter = 'none';
   }
   // Глянец стекла со стороны солнца.
-  const gr = g.createLinearGradient(cx + sun.x * 60 * s, cy + sun.y * 60 * s, cx - sun.x * 20 * s, cy - sun.y * 20 * s);
+  const gr = g.createLinearGradient(
+    cx + sun.x * 60 * s,
+    cy + sun.y * 60 * s,
+    cx - sun.x * 20 * s,
+    cy - sun.y * 20 * s,
+  );
   gr.addColorStop(0, 'rgba(255,255,255,0.45)');
   gr.addColorStop(0.45, 'rgba(255,255,255,0.08)');
   gr.addColorStop(1, 'rgba(255,255,255,0)');
@@ -134,7 +147,14 @@ export function thickFloe(rng: Rng, s: number, sun: Pt): FloeArt {
   const cy = FLOE_CANVAS.cy * s;
   const top = scissorCut(rng, floePath(rng, cx, cy - 3 * s, 52 * s, 0.15), 1.4 * s, 6 * s);
   const layer = 4.2 * s;
-  stack(ctx, top, 3, layer, [palette.thickIce.side, shade(palette.thickIce.side, -0.08), palette.thickIce.sideDark], rng);
+  stack(
+    ctx,
+    top,
+    3,
+    layer,
+    [palette.thickIce.side, shade(palette.thickIce.side, -0.08), palette.thickIce.sideDark],
+    rng,
+  );
   paperFill(ctx, top, palette.thickIce.base, rng, { tone: 0.04, blotches: 4, grain: 0.07 });
   cutEdge(ctx, top, sun, { light: 0.95, dark: 0.18, width: 2 * s });
 
@@ -142,7 +162,15 @@ export function thickFloe(rng: Rng, s: number, sun: Pt): FloeArt {
   const b = pathBounds(top);
   const cap = scissorCut(
     rng,
-    blobPath(rng, cx + (rng() - 0.5) * 8 * s, cy - 6 * s + (rng() - 0.5) * 6 * s, b.w * (0.33 + rng() * 0.06), b.h * (0.29 + rng() * 0.06), 30, 0.28),
+    blobPath(
+      rng,
+      cx + (rng() - 0.5) * 8 * s,
+      cy - 6 * s + (rng() - 0.5) * 6 * s,
+      b.w * (0.33 + rng() * 0.06),
+      b.h * (0.29 + rng() * 0.06),
+      30,
+      0.28,
+    ),
     1.2 * s,
     5 * s,
   );
@@ -170,7 +198,20 @@ export function thickFloe(rng: Rng, s: number, sun: Pt): FloeArt {
   ctx.restore();
   // второй, меньший сугроб на шапке
   if (rng() < 0.7) {
-    const bump = scissorCut(rng, blobPath(rng, cx + (rng() - 0.5) * 30 * s, cy - 10 * s + (rng() - 0.5) * 20 * s, (9 + rng() * 7) * s, (6 + rng() * 5) * s, 20, 0.3), 1 * s, 4 * s);
+    const bump = scissorCut(
+      rng,
+      blobPath(
+        rng,
+        cx + (rng() - 0.5) * 30 * s,
+        cy - 10 * s + (rng() - 0.5) * 20 * s,
+        (9 + rng() * 7) * s,
+        (6 + rng() * 5) * s,
+        20,
+        0.3,
+      ),
+      1 * s,
+      4 * s,
+    );
     paperFill(ctx, bump, palette.thickIce.snow, rng, { tone: 0.02, blotches: 1, grain: 0.04 });
     cutEdge(ctx, bump, sun, { light: 0.6, dark: 0.2, width: 1.5 * s });
   }
@@ -260,7 +301,15 @@ export function floeFoam(rng: Rng, art: FloeArt, s: number): HTMLCanvasElement {
     const facing = Math.cos(Math.atan2(p.y - cy, p.x - cx) - side);
     if (rng() > 0.18 + 0.45 * Math.max(0, facing)) continue;
     const r = (1.6 + rng() * 3.6) * s;
-    const scrap = blobPath(rng, p.x + pad + (rng() - 0.5) * 7 * s, p.y + pad + (rng() - 0.5) * 7 * s, r * (1.3 + rng() * 1.2), r, 9, 0.45);
+    const scrap = blobPath(
+      rng,
+      p.x + pad + (rng() - 0.5) * 7 * s,
+      p.y + pad + (rng() - 0.5) * 7 * s,
+      r * (1.3 + rng() * 1.2),
+      r,
+      9,
+      0.45,
+    );
     tracePath(ctx, scrap);
     ctx.fillStyle = rgba(palette.water.foam, 0.35 + rng() * 0.45);
     ctx.fill();

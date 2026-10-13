@@ -22,12 +22,24 @@ import {
 export const WATER_TILE = { w: 4, h: 2 };
 
 function periodicWave(rng: Rng, W: number, amp: number): (x: number) => number {
-  const ks = [1, 2, 3, 5].map((k) => ({ k, a: amp * (0.25 + rng() * 0.75) / k ** 0.6, p: rng() * Math.PI * 2 }));
+  const ks = [1, 2, 3, 5].map((k) => ({
+    k,
+    a: (amp * (0.25 + rng() * 0.75)) / k ** 0.6,
+    p: rng() * Math.PI * 2,
+  }));
   return (x) => ks.reduce((s, t) => s + t.a * Math.sin((2 * Math.PI * t.k * x) / W + t.p), 0);
 }
 
 /** Сегмент бумажной полосы: линза между двумя волнистыми краями с сужающимися концами. */
-function bandSegment(rng: Rng, x0: number, len: number, y: number, thick: number, W: number, amp: number): Path {
+function bandSegment(
+  rng: Rng,
+  x0: number,
+  len: number,
+  y: number,
+  thick: number,
+  W: number,
+  amp: number,
+): Path {
   const top = periodicWave(rng, W, amp);
   const bot = periodicWave(rng, W, amp * 0.7);
   const n = Math.max(8, Math.round(len / 6));
@@ -45,7 +57,7 @@ function bandSegment(rng: Rng, x0: number, len: number, y: number, thick: number
 }
 
 /** Нарисовать путь с повтором по краям плитки — для бесшовности. */
-function wrapDraw(W: number, H: number, path: Path, draw: (p: Path) => void): void {
+function wrapDraw(W: number, H: number, path: Path, draw: (p: Path) => void, margin = 4): void {
   for (const dx of [-W, 0, W]) {
     for (const dy of [-H, 0, H]) {
       const moved = path.map((p) => ({ x: p.x + dx, y: p.y + dy }));
@@ -53,7 +65,7 @@ function wrapDraw(W: number, H: number, path: Path, draw: (p: Path) => void): vo
       const maxX = Math.max(...moved.map((p) => p.x));
       const minY = Math.min(...moved.map((p) => p.y));
       const maxY = Math.max(...moved.map((p) => p.y));
-      if (maxX < -4 || minX > W + 4 || maxY < -4 || minY > H + 4) continue;
+      if (maxX < -margin || minX > W + margin || maxY < -margin || minY > H + margin) continue;
       draw(moved);
     }
   }
@@ -90,6 +102,7 @@ export function waterMid(rng: Rng, s: number, sun: Pt): HTMLCanvasElement {
   const c = makeCanvas(W, H);
   const ctx = ctx2d(c);
   const rows = 6;
+  const bands: { path: Path; tone: string }[] = [];
   for (let r = 0; r < rows; r++) {
     const yBase = ((r + 0.5) / rows) * H + (rng() - 0.5) * 10 * s;
     let x = rng() * W;
@@ -97,24 +110,42 @@ export function waterMid(rng: Rng, s: number, sun: Pt): HTMLCanvasElement {
     while (covered < W * 0.78) {
       const len = (90 + rng() * 210) * s;
       const thick = (9 + rng() * 11) * s;
-      const seg = bandSegment(rng, x, len, yBase + (rng() - 0.5) * 6 * s, thick, W, 5 * s);
-      const tone = mix(palette.water.mid, palette.water.light, rng() * 0.18);
-      wrapDraw(W, H, seg, (p) => {
-        // мягкая тень под полосой на глубокую воду
-        ctx.save();
-        ctx.translate(-sun.x * 3 * s, -sun.y * 3 * s);
-        ctx.filter = `blur(${2.5 * s}px)`;
-        tracePath(ctx, p);
-        ctx.fillStyle = rgba(palette.shadow, 0.35);
-        ctx.fill();
-        ctx.restore();
-        ctx.filter = 'none';
-        paperFill(ctx, p, tone, rng, { tone: 0.03, blotches: 1, grain: 0.07 });
-        cutEdge(ctx, p, sun, { light: 0.55, dark: 0.18, width: 1.6 * s });
-      });
+      const path = bandSegment(rng, x, len, yBase + (rng() - 0.5) * 6 * s, thick, W, 5 * s);
+      bands.push({ path, tone: mix(palette.water.mid, palette.water.light, rng() * 0.18) });
       x += len + (24 + rng() * 80) * s;
       covered += len;
     }
+  }
+  // Мягкие тени всех полос на глубокую воду — одним размытием на всю плитку (размытие
+  // на каждую полосу в разы дороже). Поле с запасом, чтобы размытие у краёв тоже было бесшовным.
+  const blur = 2.5 * s;
+  const pad = Math.ceil(blur * 3 + 4 * s);
+  const shadowLayer = makeCanvas(W + pad * 2, H + pad * 2);
+  const sctx = ctx2d(shadowLayer);
+  sctx.translate(pad - sun.x * 3 * s, pad - sun.y * 3 * s);
+  sctx.fillStyle = palette.shadow;
+  for (const b of bands) {
+    wrapDraw(
+      W,
+      H,
+      b.path,
+      (p) => {
+        tracePath(sctx, p);
+        sctx.fill();
+      },
+      pad,
+    );
+  }
+  ctx.save();
+  ctx.globalAlpha = 0.35;
+  ctx.filter = `blur(${blur}px)`;
+  ctx.drawImage(shadowLayer, -pad, -pad);
+  ctx.restore();
+  for (const b of bands) {
+    wrapDraw(W, H, b.path, (p) => {
+      paperFill(ctx, p, b.tone, rng, { tone: 0.03, blotches: 1, grain: 0.07 });
+      cutEdge(ctx, p, sun, { light: 0.55, dark: 0.18, width: 1.6 * s });
+    });
   }
   return c;
 }
@@ -131,7 +162,11 @@ export function waterLight(rng: Rng, s: number, sun: Pt): HTMLCanvasElement {
     const seg = bandSegment(rng, rng() * W, len, rng() * H, thick, W, 2 * s);
     const foamy = rng() < 0.22;
     wrapDraw(W, H, seg, (p) => {
-      paperFill(ctx, p, foamy ? palette.water.foam : palette.water.light, rng, { tone: 0.03, blotches: 0, grain: 0.05 });
+      paperFill(ctx, p, foamy ? palette.water.foam : palette.water.light, rng, {
+        tone: 0.03,
+        blotches: 0,
+        grain: 0.05,
+      });
       if (!foamy) cutEdge(ctx, p, sun, { light: 0.7, dark: 0.1, width: 1.2 * s });
     });
   }
@@ -139,7 +174,12 @@ export function waterLight(rng: Rng, s: number, sun: Pt): HTMLCanvasElement {
 }
 
 /** Плавающая льдинка-обрывок (7.5.1, 7.5.12). */
-export function waterBit(rng: Rng, s: number, sun: Pt, blob: (rng: Rng, cx: number, cy: number, r: number) => Path): HTMLCanvasElement {
+export function waterBit(
+  rng: Rng,
+  s: number,
+  sun: Pt,
+  blob: (rng: Rng, cx: number, cy: number, r: number) => Path,
+): HTMLCanvasElement {
   const r = (7 + rng() * 9) * s;
   const pad = 6 * s;
   const size = Math.ceil(r * 2 + pad * 2);
@@ -153,7 +193,10 @@ export function waterBit(rng: Rng, s: number, sun: Pt, blob: (rng: Rng, cx: numb
   ctx.fillStyle = rgba(palette.shadow, 0.35);
   ctx.fill();
   ctx.restore();
-  paperFill(ctx, path, rng() < 0.5 ? palette.thinIce.base : palette.thickIce.base, rng, { tone: 0.04, blotches: 1 });
+  paperFill(ctx, path, rng() < 0.5 ? palette.thinIce.base : palette.thickIce.base, rng, {
+    tone: 0.04,
+    blotches: 1,
+  });
   cutEdge(ctx, path, sun, { light: 0.8, dark: 0.2, width: 1.4 * s });
   return c;
 }

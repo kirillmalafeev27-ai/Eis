@@ -56,7 +56,14 @@ export function crackGeometry(rng: Rng, top: Path, center: Pt, s: number): Crack
 }
 
 /** Нарисовать трещины до стадии `stage` на холсте наложения, в пределах контура льдины. */
-export function drawCracks(c: HTMLCanvasElement, top: Path, lines: CrackLine[], stage: number, rng: Rng, s: number): void {
+export function drawCracks(
+  c: HTMLCanvasElement,
+  top: Path,
+  lines: CrackLine[],
+  stage: number,
+  rng: Rng,
+  s: number,
+): void {
   const ctx = ctx2d(c);
   ctx.clearRect(0, 0, c.width, c.height);
   if (stage <= 0) return;
@@ -114,7 +121,10 @@ export function cutPieces(
   count = 3,
 ): { canvas: HTMLCanvasElement; dir: Pt }[] {
   const mains = lines.filter((l) => l.main && l.stage === 2).sort((a, b) => a.angle - b.angle);
-  const chosen = mains.length > count ? mains.filter((_, i) => i % Math.ceil(mains.length / count) === 0).slice(0, count) : mains;
+  const chosen =
+    mains.length > count
+      ? mains.filter((_, i) => i % Math.ceil(mains.length / count) === 0).slice(0, count)
+      : mains;
   if (chosen.length < 2) return [];
   const merged = makeCanvas(floe.width, floe.height);
   const m = ctx2d(merged);

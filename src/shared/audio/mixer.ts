@@ -17,6 +17,8 @@ export interface PlayOptions {
   jitter?: number;
   volume?: number;
   delay?: number;
+  /** Множитель высоты (подсчёт рыбы — с растущей высотой). */
+  rate?: number;
 }
 
 type AnyAudioContext = typeof AudioContext;
@@ -43,9 +45,9 @@ export class Mixer {
   unlock(): void {
     try {
       if (!this.ctx) {
-        const Ctor = (window.AudioContext || (window as unknown as { webkitAudioContext?: AnyAudioContext }).webkitAudioContext) as
-          | AnyAudioContext
-          | undefined;
+        const Ctor = (window.AudioContext ||
+          (window as unknown as { webkitAudioContext?: AnyAudioContext }).webkitAudioContext) as
+          AnyAudioContext | undefined;
         if (!Ctor) return;
         const ctx = new Ctor();
         this.ctx = ctx;
@@ -96,7 +98,7 @@ export class Mixer {
     const src = ctx.createBufferSource();
     src.buffer = buf;
     const j = opts.jitter ?? 0.05;
-    src.playbackRate.value = 1 + (Math.random() * 2 - 1) * j;
+    src.playbackRate.value = (opts.rate ?? 1) * (1 + (Math.random() * 2 - 1) * j);
     let node: AudioNode = src;
     if (opts.volume !== undefined && opts.volume !== 1) {
       const g = ctx.createGain();

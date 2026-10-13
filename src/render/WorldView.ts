@@ -80,11 +80,21 @@ export class WorldView {
   private nextBreath = 0;
   private nextDrip = 0;
   private crow: Phaser.GameObjects.Image | null = null;
-  private glints: { img: Phaser.GameObjects.Image; phase: number; speed: number; cell: number; dx: number; dy: number; water: boolean }[] = [];
+  private glints: {
+    img: Phaser.GameObjects.Image;
+    phase: number;
+    speed: number;
+    cell: number;
+    dx: number;
+    dy: number;
+    water: boolean;
+  }[] = [];
   private flash: Phaser.GameObjects.Rectangle | null = null;
   private lastFlashAt = -Infinity;
   private ended = false;
   attract = false;
+  /** Сила ледохода для заставки и теста контраста; null — по времени раунда. */
+  forcedStrength: number | null = null;
 
   constructor(
     private readonly scene: Phaser.Scene,
@@ -183,7 +193,10 @@ export class WorldView {
   /** Слово у ног героя (отсчёт). */
   private sayAtFeet(w: SfxWord): void {
     if (!this.orient) return;
-    this.juice.word(this.opts.word(w), this.hero.x, this.hero.y + this.orient.cell * 0.18, this.orient.cell, { small: true, still: true });
+    this.juice.word(this.opts.word(w), this.hero.x, this.hero.y + this.orient.cell * 0.18, this.orient.cell, {
+      small: true,
+      still: true,
+    });
   }
 
   // ───────────────────────────── события ─────────────────────────────
@@ -229,7 +242,10 @@ export class WorldView {
         case 'CRACK_STAGE': {
           this.floes.crackStage(e.cell, e.stage);
           const p = this.cellPoint(s, e.cell);
-          this.opts.sound(e.stage >= 4 ? 'split' : e.stage === 3 ? 'crack3' : e.stage === 2 ? 'crack2' : 'crack1', p.x);
+          this.opts.sound(
+            e.stage >= 4 ? 'split' : e.stage === 3 ? 'crack3' : e.stage === 2 ? 'crack2' : 'crack1',
+            p.x,
+          );
           if (e.stage >= 3) this.juice.burst('chips', p.x, p.y, e.stage >= 4 ? 10 : 6);
           if (e.stage === 3) this.say('knirsch', p.x, p.y - c * 0.6, e.cell, true);
           break;
@@ -303,7 +319,9 @@ export class WorldView {
             this.opts.sound('cold', this.hero.x);
             this.say('bibber', this.hero.x, this.hero.y - c * 0.6, s.hero.cell, true);
           });
-          this.scene.time.delayedCall(1500, () => this.say('zukalt', this.hero.x, this.hero.y - c * 0.6, s.hero.cell));
+          this.scene.time.delayedCall(1500, () =>
+            this.say('zukalt', this.hero.x, this.hero.y - c * 0.6, s.hero.cell),
+          );
           break;
         }
         case 'TRAPPED': {
@@ -350,14 +368,65 @@ export class WorldView {
     this.lastFlashAt = this.time;
     const p = o.toWorld(aOf(this.state.grid, cell), lOf(this.state.grid, cell));
     this.flash?.destroy();
-    this.flash = this.scene.add.rectangle(p.x, p.y, o.cell * 0.9, o.cell * 0.9, 0xffffff, this.opts.reducedMotion ? 0.25 : 0.45);
+    this.flash = this.scene.add.rectangle(
+      p.x,
+      p.y,
+      o.cell * 0.9,
+      o.cell * 0.9,
+      0xffffff,
+      this.opts.reducedMotion ? 0.25 : 0.45,
+    );
     this.layers.overlay.add(this.flash);
     const f = this.flash;
-    this.scene.tweens.add({ targets: f, alpha: 0, duration: balance.anim.deniedFlashMs, onComplete: () => f.destroy() });
+    this.scene.tweens.add({
+      targets: f,
+      alpha: 0,
+      duration: balance.anim.deniedFlashMs,
+      onComplete: () => f.destroy(),
+    });
+  }
+
+  /** Центры объектов для теста контраста: вода, тонкая и толстая льдина, рыба (8.4). */
+  contrastPoints(): {
+    water: { x: number; y: number };
+    thin: { x: number; y: number };
+    thick: { x: number; y: number };
+    fish: { x: number; y: number };
+  } | null {
+    const o = this.orient;
+    if (!o) return null;
+    const s = this.state;
+    const find = (kind: string, avoid: number[]) => {
+      for (let a = 2; a < s.grid.height - 1; a++)
+        for (let l = 1; l < s.grid.length - 1; l++) {
+          const c = a * s.grid.length + l;
+          if (s.grid.cells[c] === kind && !avoid.includes(c)) return c;
+        }
+      return -1;
+    };
+    const fishCells = s.fish.map((f) => f.cell);
+    const water = find('water', []);
+    const thin = find('thin', fishCells);
+    const thick = find('thick', fishCells);
+    const at = (c: number) => this.floes.surfaceAt(c) ?? o.toWorld(aOf(s.grid, c), lOf(s.grid, c));
+    const fp = this.fish.bodyPoint(0);
+    if (water < 0 || thin < 0 || thick < 0 || !fp) return null;
+    const th = at(thin);
+    return {
+      water: at(water),
+      thin: { x: th.x - 18, y: th.y + 14 },
+      thick: { x: at(thick).x, y: at(thick).y - 6 },
+      fish: fp,
+    };
   }
 
   debugInfo() {
     return { floes: this.floes.debugInfo(), hero: { x: this.hero.x, y: this.hero.y } };
+  }
+
+  /** Точки пролёта камеры в интро (11.5.3): от героя на мостках к окну избушки. */
+  introPoints(): { from: { x: number; y: number }; to: { x: number; y: number } } {
+    return { from: { x: this.hero.x, y: this.hero.y }, to: { ...this.banks.windowPoint } };
   }
 
   /** Старт раунда: герой на мостках поправляет корзину, «AUF GEHT'S!». */
@@ -372,7 +441,7 @@ export class WorldView {
   update(dtMs: number, s: GameState, showHints: boolean): { dx: number; dy: number; zoom: number } {
     this.state = s;
     this.time += dtMs;
-    const strength = this.attract ? 0.45 : meltStrengthOf(s);
+    const strength = this.forcedStrength ?? (this.attract ? 0.45 : meltStrengthOf(s));
     this.light = lightFor(strength, balance.layout.cellPx);
     const fx = this.juice.update(dtMs);
     const frozen = this.juice.frozen;
@@ -393,7 +462,14 @@ export class WorldView {
     this.hero.ready = isReady(s);
     this.hero.update(dtMs, this.light, rm, frozen);
     this.fish.update(dtMs, s, this.light, (cell) => this.floes.surfaceAt(cell), rm, frozen);
-    this.hints.update(dtMs, s, (cell) => this.floes.surfaceAt(cell), { x: this.hero.x, y: this.hero.y, head: this.hero.headPoint() }, showHints && !this.attract, rm);
+    this.hints.update(
+      dtMs,
+      s,
+      (cell) => this.floes.surfaceAt(cell),
+      { x: this.hero.x, y: this.hero.y, head: this.hero.headPoint() },
+      showHints && !this.attract,
+      rm,
+    );
     this.grade.update(strength);
     this.updateGlints(dtMs, strength);
     this.ambientEvents(dtMs, s, strength);
@@ -408,7 +484,8 @@ export class WorldView {
     if (playing && strength >= balance.anim.rumbleFromStrength) {
       this.nextRumble -= dtMs;
       if (this.nextRumble <= 0) {
-        this.nextRumble = balance.anim.rumbleMinMs + Math.random() * (balance.anim.rumbleMaxMs - balance.anim.rumbleMinMs);
+        this.nextRumble =
+          balance.anim.rumbleMinMs + Math.random() * (balance.anim.rumbleMaxMs - balance.anim.rumbleMinMs);
         this.water.shudder();
         this.opts.sound('rumble', o.gridSize.w * Math.random());
         const far = o.toWorld(s.grid.height - 1.4, s.grid.length * (0.2 + Math.random() * 0.6));
@@ -418,7 +495,8 @@ export class WorldView {
     // Изредка над рекой пролетает ворона — видна только её тень (7.5.12).
     this.nextCrow -= dtMs;
     if (this.nextCrow <= 0 && !this.crow) {
-      this.nextCrow = balance.anim.crowMinGapMs + Math.random() * (balance.anim.crowMaxGapMs - balance.anim.crowMinGapMs);
+      this.nextCrow =
+        balance.anim.crowMinGapMs + Math.random() * (balance.anim.crowMaxGapMs - balance.anim.crowMinGapMs);
       this.flyCrow();
     }
     // Пар изо рта на закате, капли после первого падения.
@@ -474,7 +552,15 @@ export class WorldView {
       img.setBlendMode(Phaser.BlendModes.ADD);
       img.setAlpha(0);
       this.layers.atmosphere.add(img);
-      this.glints.push({ img, phase: Math.random() * Math.PI * 2, speed: 0.6 + Math.random() * 1.4, cell: -1, dx: 0, dy: 0, water });
+      this.glints.push({
+        img,
+        phase: Math.random() * Math.PI * 2,
+        speed: 0.6 + Math.random() * 1.4,
+        cell: -1,
+        dx: 0,
+        dy: 0,
+        water,
+      });
     }
   }
 
@@ -513,7 +599,8 @@ export class WorldView {
         g.img.setAlpha(0);
         continue;
       }
-      const base = this.floes.surfaceAt(g.cell) ?? o.toWorld(aOf(this.state.grid, g.cell), lOf(this.state.grid, g.cell));
+      const base =
+        this.floes.surfaceAt(g.cell) ?? o.toWorld(aOf(this.state.grid, g.cell), lOf(this.state.grid, g.cell));
       const t = this.time / 1000;
       const tw = calm ? 0.5 : Math.max(0, Math.sin(t * g.speed * 2.2 + g.phase));
       const a = Math.pow(tw, 6) * (g.water ? waterK * 0.85 : snowK);

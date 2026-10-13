@@ -17,12 +17,26 @@ const p = arg('p') ? Number(arg('p')) : defaultPace.p;
 const seed = Number(arg('seed') ?? 1);
 const levelArg = arg('level');
 const botArg = arg('bot') as BotKind | undefined;
-const chosenLevels = levelArg ? levels.filter((l) => String(l.id) === levelArg || l.label === levelArg) : levels;
+const chosenLevels = levelArg
+  ? levels.filter((l) => String(l.id) === levelArg || l.label === levelArg)
+  : levels;
 const bots: BotKind[] = botArg ? [botArg] : ['cautious', 'balanced', 'greedy'];
 
 const pct = (x: number) => `${(x * 100).toFixed(1)}%`;
 const rows: string[][] = [
-  ['ур.', 'бот', 'победы', 'рыб', 'рыб в победах', '★0/★1/★2/★3', 'падений: трещ/тая', 'доля таяния', 'пораж.: холод/тупик/время', 'длинных', 'время, с'],
+  [
+    'ур.',
+    'бот',
+    'победы',
+    'рыб',
+    'рыб в победах',
+    '★0/★1/★2/★3',
+    'падений: трещ/тая',
+    'доля таяния',
+    'пораж.: холод/тупик/время',
+    'длинных',
+    'время, с',
+  ],
 ];
 const t0 = Date.now();
 for (const level of chosenLevels) {
@@ -39,7 +53,8 @@ for (const level of chosenLevels) {
       r.stars.map((x) => pct(x / r.runs)).join(' / '),
       `${r.fallsCrack.toFixed(2)} / ${r.fallsMelt.toFixed(2)}`,
       falls ? pct(r.fallsMelt / falls) : '—',
-      `${r.lossCold} / ${r.lossTrapped} / ${r.lossTimeout}` + (losses ? ` (тупик ${pct(r.lossTrapped / losses)})` : ''),
+      `${r.lossCold} / ${r.lossTrapped} / ${r.lossTimeout}` +
+        (losses ? ` (тупик ${pct(r.lossTrapped / losses)})` : ''),
       r.longJumps.toFixed(2),
       r.avgTimeS.toFixed(0),
     ]);

@@ -58,7 +58,9 @@ export class FishView {
         rig,
         shade,
         facing: h < 0.5 ? -1 : 1,
-        nextFlop: (balance.anim.fishFlopMinMs + h * (balance.anim.fishFlopMaxMs - balance.anim.fishFlopMinMs)) * (0.4 + h),
+        nextFlop:
+          (balance.anim.fishFlopMinMs + h * (balance.anim.fishFlopMaxMs - balance.anim.fishFlopMinMs)) *
+          (0.4 + h),
         flopT: -1,
         gone: f.status !== 'waiting',
         offset: { x: (h - 0.5) * 30, y: 18 + h * 10 },
@@ -81,6 +83,13 @@ export class FishView {
 
   setOrientation(o: Orientation): void {
     this.orient = o;
+  }
+
+  /** Середина тела рыбы в мире (для теста контраста). */
+  bodyPoint(i: number): { x: number; y: number } | null {
+    const f = this.fish[i];
+    if (!f || f.gone) return null;
+    return { x: f.rig.root.x - 4 * FISH_SCALE * f.facing, y: f.rig.root.y - 14 * FISH_SCALE };
   }
 
   /** Рыба попала в корзину: подпрыгивает и ныряет в корзину героя. */
@@ -131,7 +140,14 @@ export class FishView {
     this.scene.tweens.add({ targets: f.rig.tail, rotation: 0.9, yoyo: true, repeat: 3, duration: 80 });
   }
 
-  update(dtMs: number, s: GameState, light: Light, surface: (cell: number) => { x: number; y: number } | null, reducedMotion: boolean, frozen: boolean): void {
+  update(
+    dtMs: number,
+    s: GameState,
+    light: Light,
+    surface: (cell: number) => { x: number; y: number } | null,
+    reducedMotion: boolean,
+    frozen: boolean,
+  ): void {
     const o = this.orient;
     if (!o) return;
     if (!frozen) this.time += dtMs;
@@ -146,7 +162,9 @@ export class FishView {
         f.nextFlop -= dtMs;
         if (f.nextFlop <= 0 && f.flopT < 0) {
           f.flopT = 0;
-          f.nextFlop = balance.anim.fishFlopMinMs + Math.random() * (balance.anim.fishFlopMaxMs - balance.anim.fishFlopMinMs);
+          f.nextFlop =
+            balance.anim.fishFlopMinMs +
+            Math.random() * (balance.anim.fishFlopMaxMs - balance.anim.fishFlopMinMs);
           this.onFlop?.(f.index, base.x + f.offset.x, base.y + f.offset.y - 10);
         }
       }

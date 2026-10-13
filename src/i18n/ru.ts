@@ -5,7 +5,10 @@ export const ru = {
   title: 'Льдины',
   subtitle: 'Die Eisschollen',
   tagline: 'Auf dünnem Eis',
-  menuHello: ['Весна. На реке ледоход.', 'Перейди на тот берег, где в избушке горит окно, и прихвати рыбу к ужину.'] as const,
+  menuHello: [
+    'Весна. На реке ледоход.',
+    'Перейди на тот берег, где в избушке горит окно, и прихвати рыбу к ужину.',
+  ] as const,
   menuHint: 'Каждый верный ответ на вопрос по немецкому — прыжок на соседнюю льдину.',
   play: 'Играть',
   continue: 'Продолжить',
@@ -20,7 +23,9 @@ export const ru = {
   introCaption: 'Перейди на тот берег. Рыбу — к ужину',
   skipHint: 'Тап — пропустить',
   jumpCost: (n: number) =>
-    n <= 1 ? 'Прыжок — 1 ответ' : `Длинный прыжок — ${n} ${plural('ru', n, { one: 'ответ', few: 'ответа', many: 'ответов', other: 'ответа' })}`,
+    n <= 1
+      ? 'Прыжок — 1 ответ'
+      : `Длинный прыжок — ${n} ${plural('ru', n, { one: 'ответ', few: 'ответа', many: 'ответов', other: 'ответа' })}`,
   readyPick: 'Готов! Выбери льдину',
   pickTarget: 'Выбери льдину или нажми «К берегу»',
   toShore: 'К берегу',
@@ -54,7 +59,8 @@ export const ru = {
     causeCold: 'Замёрз: три падения в ледяную воду',
     causeTrapped: 'Тупик: к берегу не осталось пути',
     basket: 'Улов',
-    fishCount: (n: number) => `${n} ${plural('ru', n, { one: 'рыба', few: 'рыбы', many: 'рыб', other: 'рыбы' })}`,
+    fishCount: (n: number) =>
+      `${n} ${plural('ru', n, { one: 'рыба', few: 'рыбы', many: 'рыб', other: 'рыбы' })}`,
     seconds: (ms: number) => `${(ms / 1000).toFixed(1).replace('.', ',')} с`,
     snapshot: 'Кадр раунда',
   },
@@ -85,7 +91,8 @@ export const ru = {
     ok: 'Понятно',
   },
   keys: 'Клавиши: 1–4 — ответ, стрелки — прыжок, Shift + стрелка — длинный, H — к берегу, пробел — стоять, P — пауза',
-  stars: (n: number) => `${n} ${plural('ru', n, { one: 'звезда', few: 'звезды', many: 'звёзд', other: 'звезды' })}`,
+  stars: (n: number) =>
+    `${n} ${plural('ru', n, { one: 'звезда', few: 'звезды', many: 'звёзд', other: 'звезды' })}`,
   error: 'Что-то пошло не так. Перезагрузи страницу.',
 };
 

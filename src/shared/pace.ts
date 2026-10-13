@@ -40,7 +40,8 @@ export class PaceTracker {
       const raw = storage.get(PACE_KEY);
       if (raw) {
         const s = JSON.parse(raw) as Stored;
-        if (Array.isArray(s.times)) this.times = s.times.filter((x) => Number.isFinite(x) && x > 0).slice(-cfg.timeWindow);
+        if (Array.isArray(s.times))
+          this.times = s.times.filter((x) => Number.isFinite(x) && x > 0).slice(-cfg.timeWindow);
         if (Array.isArray(s.results)) this.results = s.results.map(Boolean).slice(-cfg.accuracyWindow);
       }
     } catch {

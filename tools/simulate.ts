@@ -96,7 +96,13 @@ export interface SimReport {
   avgTimeS: number;
 }
 
-export function simulate(level: LevelConfig, kind: BotKind, runs: number, pace: Pace, baseSeed = 1): SimReport {
+export function simulate(
+  level: LevelConfig,
+  kind: BotKind,
+  runs: number,
+  pace: Pace,
+  baseSeed = 1,
+): SimReport {
   const stars: [number, number, number, number] = [0, 0, 0, 0];
   let wins = 0;
   let fish = 0;

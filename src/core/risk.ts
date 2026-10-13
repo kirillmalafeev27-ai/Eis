@@ -33,7 +33,12 @@ export function riskLevelOf(ratio: number): RiskLevel {
   return 'fail';
 }
 
-export function jumpRisk(input: { cost: number; pipsHave: number; availableMs: number; pace: Pace }): JumpRisk {
+export function jumpRisk(input: {
+  cost: number;
+  pipsHave: number;
+  availableMs: number;
+  pace: Pace;
+}): JumpRisk {
   const need = neededMs(input.cost, input.pipsHave, input.pace);
   const avail = input.availableMs;
   let ratio: number;

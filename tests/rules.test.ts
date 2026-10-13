@@ -217,7 +217,14 @@ describe('таймер льдины, трещины, падение и тепл�
 
 describe('рыба, звёзды и итог (2.5, 2.6)', () => {
   it('рыба попадает в корзину при приземлении, победа — на дальнем берегу, звёзды по рыбе', () => {
-    const r = new Runner(stateFrom(BASIC, { fish: [[1, 1], [2, 1]] })).noMelt();
+    const r = new Runner(
+      stateFrom(BASIC, {
+        fish: [
+          [1, 1],
+          [2, 1],
+        ],
+      }),
+    ).noMelt();
     r.correct();
     expect(r.target(1, 1).find((e) => e.type === 'FISH_CAUGHT')).toMatchObject({ count: 1 });
     r.correct();
@@ -269,7 +276,11 @@ describe('таяние (2.4)', () => {
   it('намокшая льдина тонет в срок; рыба с неё уплывает', () => {
     const s0 = stateFrom(BASIC, { fish: [[4, 4]] });
     const cell = at(s0.grid, 4, 4);
-    const s = { ...s0, sinkAt: s0.sinkAt.map((v, i) => (i === cell ? 1000 : v)), wetStart: s0.wetStart.map((v, i) => (i === cell ? 0 : v)) };
+    const s = {
+      ...s0,
+      sinkAt: s0.sinkAt.map((v, i) => (i === cell ? 1000 : v)),
+      wetStart: s0.wetStart.map((v, i) => (i === cell ? 0 : v)),
+    };
     const r = new Runner(s).noMelt();
     const ev = r.tick(1100);
     expect(types(ev)).toEqual(expect.arrayContaining(['MELT_SUNK', 'FISH_LOST']));
@@ -306,7 +317,9 @@ describe('таяние (2.4)', () => {
     r.correct();
     r.target(1, 0);
     const ev = r.tick(200000, 500);
-    const melted = ev.filter((e) => e.type === 'MELT_WARN').map((e) => (e.type === 'MELT_WARN' ? e.cell : -1));
+    const melted = ev
+      .filter((e) => e.type === 'MELT_WARN')
+      .map((e) => (e.type === 'MELT_WARN' ? e.cell : -1));
     expect(melted).not.toContain(at(r.s.grid, 2, 1));
     expect(melted).not.toContain(at(r.s.grid, 3, 1));
   });

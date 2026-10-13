@@ -17,7 +17,9 @@ const G = gridFrom([
 describe('jumpTargets (2.2)', () => {
   it('обычный прыжок — на соседнюю клетку по 4 сторонам за 1 заряд, по берегу тоже', () => {
     const t = jumpTargets(G, at(G, 0, 1));
-    expect(t.map((j) => j.to).sort((a, b) => a - b)).toEqual([at(G, 0, 0), at(G, 0, 2), at(G, 1, 1)].sort((a, b) => a - b));
+    expect(t.map((j) => j.to).sort((a, b) => a - b)).toEqual(
+      [at(G, 0, 0), at(G, 0, 2), at(G, 1, 1)].sort((a, b) => a - b),
+    );
     expect(t.every((j) => j.cost === 1 && !j.long)).toBe(true);
   });
 

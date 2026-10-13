@@ -57,7 +57,9 @@ export function makeBot(kind: BotKind): Bot {
     return {
       kind,
       plan(s) {
-        const detour = fishDetour(s, defaultPenalties, (r) => r.steps.every((st) => st.risk.level !== 'fail'));
+        const detour = fishDetour(s, defaultPenalties, (r) =>
+          r.steps.every((st) => st.risk.level !== 'fail'),
+        );
         if (detour) return detour.target;
         const bank = routeToBank(s, defaultPenalties);
         return bank ? bank.target : null;
@@ -88,7 +90,12 @@ export function makeBot(kind: BotKind): Bot {
         let from = s.hero.cell;
         let ok = true;
         for (const goal of [...order, -1]) {
-          const startEnv: RouteEnv = { ...env(s, GREEDY), grid, start: from, pips: from === s.hero.cell ? s.hero.pips : 0 };
+          const startEnv: RouteEnv = {
+            ...env(s, GREEDY),
+            grid,
+            start: from,
+            pips: from === s.hero.cell ? s.hero.pips : 0,
+          };
           const r = findRoute(startEnv, goal < 0 ? farBankCells(grid) : goal);
           if (!r || !r.steps.length) {
             ok = false;
@@ -97,7 +104,8 @@ export function makeBot(kind: BotKind): Bot {
           if (first === null) first = r.steps[0].to;
           cost += r.cost;
           const sunk: [number, 'water'][] = [];
-          for (const c of [from, ...r.steps.slice(0, -1).map((st) => st.to)]) if (isFloe(grid.cells[c])) sunk.push([c, 'water']);
+          for (const c of [from, ...r.steps.slice(0, -1).map((st) => st.to)])
+            if (isFloe(grid.cells[c])) sunk.push([c, 'water']);
           grid = withCells(grid, sunk);
           from = r.target;
         }

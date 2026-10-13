@@ -15,7 +15,10 @@ export class LevelsScreen {
       const card = el(
         'button',
         `level-card${open ? '' : ' is-locked'}`,
-        { type: 'button', 'aria-label': `${ru.level(lv.label)}${open ? `, ${ru.stars(stars)}` : `, ${ru.locked}`}` },
+        {
+          type: 'button',
+          'aria-label': `${ru.level(lv.label)}${open ? `, ${ru.stars(stars)}` : `, ${ru.locked}`}`,
+        },
         [
           el('span', 'level-num', {}, [lv.label]),
           el('span', 'level-stars', { 'aria-hidden': 'true' }, [

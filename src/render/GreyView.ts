@@ -62,7 +62,12 @@ export class GreyView {
       if (s.sinkAt[i] >= 0) {
         const k = Math.min(1, (s.time - s.wetStart[i]) / Math.max(1, s.sinkAt[i] - s.wetStart[i]));
         g.fillStyle(0x1f2a33, 0.6);
-        g.fillRect(p.x - c / 2 + inset, p.y + c / 2 - inset - (c - inset * 2) * k, c - inset * 2, (c - inset * 2) * k);
+        g.fillRect(
+          p.x - c / 2 + inset,
+          p.y + c / 2 - inset - (c - inset * 2) * k,
+          c - inset * 2,
+          (c - inset * 2) * k,
+        );
       }
     }
     // Маршрут — точки трёх цветов.

@@ -25,7 +25,8 @@ export function generateLevel(level: LevelConfig, seed: number, tMedMs: number):
   const warnings: string[] = [];
   const maxAttempts = balance.gen.attempts;
   for (let attempt = 0; ; attempt++) {
-    const relax = attempt < maxAttempts ? 0 : attempt < 2 * maxAttempts ? 1 : attempt < 3 * maxAttempts ? 2 : 3;
+    const relax =
+      attempt < maxAttempts ? 0 : attempt < 2 * maxAttempts ? 1 : attempt < 3 * maxAttempts ? 2 : 3;
     if (attempt === maxAttempts) {
       warnings.push(`level ${level.id}, seed ${seed}: ${maxAttempts} attempts failed, relaxing requirements`);
     }

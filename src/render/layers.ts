@@ -33,7 +33,13 @@ export function destroyLayers(l: WorldLayers): void {
 }
 
 /** Картинка по ключу манифеста с правильным кадром, точкой привязки и масштабом мира. */
-export function artImage(scene: Phaser.Scene, art: ArtFactory, key: string, x = 0, y = 0): Phaser.GameObjects.Image {
+export function artImage(
+  scene: Phaser.Scene,
+  art: ArtFactory,
+  key: string,
+  x = 0,
+  y = 0,
+): Phaser.GameObjects.Image {
   const r = art.ref(key);
   const img = scene.add.image(x, y, r.texture, r.frame);
   img.setOrigin(r.ox, r.oy);

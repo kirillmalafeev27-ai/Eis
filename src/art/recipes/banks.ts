@@ -44,15 +44,27 @@ export function bankCanvas(rng: Rng, s: number, sun: Pt, spec: BankSpec): HTMLCa
   // Кромка у воды: у ближнего берега сверху, у дальнего — снизу (там видны слои-обрыв).
   const edgeY = near ? 8 * s : H - 14 * s;
   const wave = (x: number) =>
-    Math.sin(x / (61 * s)) * 3.2 * s + Math.sin(x / (23 * s) + 1.3) * 1.6 * s + Math.sin(x / (137 * s) + 0.4) * 4 * s;
+    Math.sin(x / (61 * s)) * 3.2 * s +
+    Math.sin(x / (23 * s) + 1.3) * 1.6 * s +
+    Math.sin(x / (137 * s) + 0.4) * 4 * s;
   const edge: Pt[] = [];
-  for (let x = -10 * s; x <= W + 10 * s; x += 7 * s) edge.push({ x, y: edgeY + wave(x) + (rng() - 0.5) * 1.2 * s });
-  const body: Path = near ? [...edge, { x: W + 10 * s, y: H + 10 * s }, { x: -10 * s, y: H + 10 * s }] : [{ x: -10 * s, y: -10 * s }, { x: W + 10 * s, y: -10 * s }, ...edge.slice().reverse()];
+  for (let x = -10 * s; x <= W + 10 * s; x += 7 * s)
+    edge.push({ x, y: edgeY + wave(x) + (rng() - 0.5) * 1.2 * s });
+  const body: Path = near
+    ? [...edge, { x: W + 10 * s, y: H + 10 * s }, { x: -10 * s, y: H + 10 * s }]
+    : [{ x: -10 * s, y: -10 * s }, { x: W + 10 * s, y: -10 * s }, ...edge.slice().reverse()];
   const snow = scissorCut(rng, body, 1.2 * s, 7 * s);
 
   if (!near) {
     // Обрыв дальнего берега: слои снега и льда по нижнему краю, нижние темнее.
-    stack(ctx, snow, 3, 4.5 * s, [palette.snow.shade, shade(palette.snow.shade, -0.1), shade(palette.thickIce.sideDark, -0.05)], rng);
+    stack(
+      ctx,
+      snow,
+      3,
+      4.5 * s,
+      [palette.snow.shade, shade(palette.snow.shade, -0.1), shade(palette.thickIce.sideDark, -0.05)],
+      rng,
+    );
   } else {
     // Мягкая тень ближнего берега на воду (кромка приподнята над водой).
     ctx.save();
@@ -154,23 +166,33 @@ export function bridge(rng: Rng, s: number, sun: Pt): HTMLCanvasElement {
   const pw = (w - 8 * s) / planks;
   // две балки
   for (const bx of [w * 0.22, w * 0.78]) {
-    const beam: Path = scissorCut(rng, [
-      { x: bx - 4 * s, y: 4 * s },
-      { x: bx + 4 * s, y: 4 * s },
-      { x: bx + 4 * s, y: h },
-      { x: bx - 4 * s, y: h },
-    ], 0.6 * s, 5 * s);
+    const beam: Path = scissorCut(
+      rng,
+      [
+        { x: bx - 4 * s, y: 4 * s },
+        { x: bx + 4 * s, y: 4 * s },
+        { x: bx + 4 * s, y: h },
+        { x: bx - 4 * s, y: h },
+      ],
+      0.6 * s,
+      5 * s,
+    );
     paperFill(ctx, translatePath(beam, 6 * s, 6 * s), palette.wood.shade, rng, { tone: 0.03, blotches: 1 });
   }
   for (let i = 0; i < 6; i++) {
-    const y = 8 * s + i * (h - 16 * s) / 6;
+    const y = 8 * s + (i * (h - 16 * s)) / 6;
     const ph = (h - 16 * s) / 6 - 3 * s;
-    const plank: Path = scissorCut(rng, [
-      { x: 6 * s + (rng() - 0.5) * 3 * s, y: y },
-      { x: w + (rng() - 0.5) * 3 * s, y: y + (rng() - 0.5) * 2 * s },
-      { x: w + (rng() - 0.5) * 3 * s, y: y + ph },
-      { x: 6 * s + (rng() - 0.5) * 3 * s, y: y + ph + (rng() - 0.5) * 2 * s },
-    ], 0.8 * s, 6 * s);
+    const plank: Path = scissorCut(
+      rng,
+      [
+        { x: 6 * s + (rng() - 0.5) * 3 * s, y: y },
+        { x: w + (rng() - 0.5) * 3 * s, y: y + (rng() - 0.5) * 2 * s },
+        { x: w + (rng() - 0.5) * 3 * s, y: y + ph },
+        { x: 6 * s + (rng() - 0.5) * 3 * s, y: y + ph + (rng() - 0.5) * 2 * s },
+      ],
+      0.8 * s,
+      6 * s,
+    );
     ctx.save();
     ctx.filter = `blur(${1.5 * s}px)`;
     tracePath(ctx, translatePath(plank, -sun.x * 2.5 * s, -sun.y * 2.5 * s));
@@ -178,7 +200,10 @@ export function bridge(rng: Rng, s: number, sun: Pt): HTMLCanvasElement {
     ctx.fill();
     ctx.restore();
     ctx.filter = 'none';
-    paperFill(ctx, plank, mix(palette.wood.base, palette.wood.shade, rng() * 0.3), rng, { tone: 0.05, blotches: 2 });
+    paperFill(ctx, plank, mix(palette.wood.base, palette.wood.shade, rng() * 0.3), rng, {
+      tone: 0.05,
+      blotches: 2,
+    });
     // волокна дерева
     ctx.save();
     tracePath(ctx, plank);
@@ -222,7 +247,11 @@ export function reed(rng: Rng, s: number, sun: Pt): HTMLCanvasElement {
       { x: x0 + lean + 0.8 * s, y: top },
       { x: x0 + 1.4 * s, y: h },
     ];
-    paperFill(ctx, stem, mix(palette.reed, palette.wood.base, rng() * 0.25), rng, { tone: 0.04, blotches: 0, grain: 0.04 });
+    paperFill(ctx, stem, mix(palette.reed, palette.wood.base, rng() * 0.25), rng, {
+      tone: 0.04,
+      blotches: 0,
+      grain: 0.04,
+    });
     if (rng() < 0.7) {
       const head = blobPath(rng, x0 + lean, top + 5 * s, 2.6 * s, 7 * s, 10, 0.2);
       paperFill(ctx, head, palette.wood.base, rng, { tone: 0.04, blotches: 0 });

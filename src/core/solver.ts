@@ -18,7 +18,11 @@ export interface SolveResult {
 }
 
 /** Прыжок разрешён решателем: не красный для свежей льдины вида клетки-старта. */
-export function solverAllows(grid: Grid, level: LevelConfig, pace: Pace): (jump: Jump, takeoff: number) => boolean {
+export function solverAllows(
+  grid: Grid,
+  level: LevelConfig,
+  pace: Pace,
+): (jump: Jump, takeoff: number) => boolean {
   return (jump, takeoff) => freshJumpRisk(grid.cells[takeoff], jump.cost, level, pace).level !== 'fail';
 }
 
@@ -54,7 +58,8 @@ export function distancesTo(
   for (let c = 0; c < n; c++) if (isTarget(c)) dist[c] = 0;
   for (;;) {
     let best = -1;
-    for (let i = 0; i < n; i++) if (!done[i] && dist[i] < Infinity && (best < 0 || dist[i] < dist[best])) best = i;
+    for (let i = 0; i < n; i++)
+      if (!done[i] && dist[i] < Infinity && (best < 0 || dist[i] < dist[best])) best = i;
     if (best < 0) break;
     done[best] = 1;
     for (const e of reverse[best]) {
@@ -70,13 +75,18 @@ export function distancesTo(
  * Клетки без них удаляются, пока такие находятся; если удалить пришлось рыбу — пути через
  * всех рыб нет (null). Мостки — только выход, дальний берег — только вход.
  */
-export function pruneDeadEnds(grid: Grid, adj: Edge[][], start: number, required: Uint8Array): Edge[][] | null {
+export function pruneDeadEnds(
+  grid: Grid,
+  adj: Edge[][],
+  start: number,
+  required: Uint8Array,
+): Edge[][] | null {
   const n = grid.cells.length;
   const alive = new Uint8Array(n);
   for (let c = 0; c < n; c++) alive[c] = grid.cells[c] === 'water' ? 0 : 1;
   const inc: number[][] = Array.from({ length: n }, () => []);
   for (let c = 0; c < n; c++) for (const e of adj[c]) inc[e.to].push(c);
-  for (let changed = true; changed; ) {
+  for (let changed = true; changed;) {
     changed = false;
     for (let c = 0; c < n; c++) {
       if (!alive[c] || c === start || grid.cells[c] === 'far') continue;
@@ -239,7 +249,8 @@ export function solveLevel(
     visited.fill(0);
     visited[bridge] = 1;
     path.length = 1;
-    if (dfs(bridge, fishBit[bridge], 0, start + slack, 0)) return { path: path.slice(), nodes, exhausted: false };
+    if (dfs(bridge, fishBit[bridge], 0, start + slack, 0))
+      return { path: path.slice(), nodes, exhausted: false };
   }
   return { path: null, nodes, exhausted };
 }

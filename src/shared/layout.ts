@@ -92,7 +92,10 @@ export function createLayout(container: HTMLElement, theme: Theme, cfg: LayoutCo
     const gap = cfg.gap;
     let q: number;
     if (landscape) {
-      q = Math.max(cfg.landscapeQuestionMin, Math.min(cfg.landscapeQuestionMax, W * cfg.landscapeQuestionShare));
+      q = Math.max(
+        cfg.landscapeQuestionMin,
+        Math.min(cfg.landscapeQuestionMax, W * cfg.landscapeQuestionShare),
+      );
       if (needs) {
         const need = needs.landscape.w * needs.minCell + needs.inset * 2;
         const avail = W - q - gap;
