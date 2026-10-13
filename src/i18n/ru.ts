@@ -5,6 +5,8 @@ export const ru = {
   title: 'Льдины',
   subtitle: 'Die Eisschollen',
   tagline: 'Auf dünnem Eis',
+  menuHello: ['Весна. На реке ледоход.', 'Перейди на тот берег, где в избушке горит окно, и прихвати рыбу к ужину.'] as const,
+  menuHint: 'Каждый верный ответ на вопрос по немецкому — прыжок на соседнюю льдину.',
   play: 'Играть',
   continue: 'Продолжить',
   settings: 'Настройки',
