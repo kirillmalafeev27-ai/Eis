@@ -105,7 +105,7 @@ export class GreyView {
       g.fillCircle(hp.x - c * 0.12 + i * c * 0.24, hp.y - c * 0.36, c * 0.07);
     }
     // Временная полоска таймера (только в сером прототипе).
-    if (s.hero.floeStart >= 0) {
+    if (s.hero.floeStart !== null) {
       const k = 1 - heroFloeProgress(s);
       g.fillStyle(0x111111, 0.8);
       g.fillRect(hp.x - c * 0.4, hp.y + c * 0.3, c * 0.8, c * 0.08);

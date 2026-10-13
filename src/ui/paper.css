@@ -336,7 +336,8 @@
   display: grid;
   gap: 10px;
   grid-template-columns: 1fr 1fr;
-  grid-auto-rows: minmax(56px, 1fr);
+  grid-auto-rows: minmax(56px, 128px);
+  align-content: center;
 }
 
 .qp-options[data-count='3'] .qp-chip:last-child {
@@ -345,6 +346,8 @@
 
 .series-root[data-orient='landscape'] .qp-options {
   grid-template-columns: 1fr;
+  grid-auto-rows: minmax(56px, 104px);
+  align-content: center;
 }
 
 .series-root[data-orient='landscape'] .qp-options[data-count='3'] .qp-chip:last-child {

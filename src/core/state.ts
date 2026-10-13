@@ -18,8 +18,8 @@ export interface HeroState {
   target: number | null;
   warmth: number;
   falls: number;
-  /** Когда запущен таймер льдины под героем; −1 — герой на берегу. */
-  floeStart: number;
+  /** Когда запущен таймер льдины под героем; null — герой на берегу. */
+  floeStart: number | null;
   floeDuration: number;
   /** Сколько стадий трещин уже наступило: 0…4 (4 — раскол на 90%). */
   crackStage: number;
@@ -102,7 +102,7 @@ export function createState(level: LevelConfig, gen: GeneratedLevel, pace: Pace,
       target: null,
       warmth: balance.rules.warmth,
       falls: 0,
-      floeStart: -1,
+      floeStart: null,
       floeDuration: 0,
       crackStage: 0,
       countdown: 0,

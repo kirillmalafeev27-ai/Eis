@@ -23,12 +23,12 @@ export function floeTimerMs(s: GameState, kind: 'thin' | 'thick'): number {
 
 /** Момент, когда развалится льдина под героем; Infinity на берегу. */
 export function heroFloeEndsAt(s: GameState): number {
-  return s.hero.floeStart >= 0 ? s.hero.floeStart + s.hero.floeDuration : Infinity;
+  return s.hero.floeStart !== null ? s.hero.floeStart + s.hero.floeDuration : Infinity;
 }
 
 /** Доля прошедшего таймера льдины под героем, 0…1. */
 export function heroFloeProgress(s: GameState): number {
-  if (s.hero.floeStart < 0 || s.hero.floeDuration <= 0) return 0;
+  if (s.hero.floeStart === null || s.hero.floeDuration <= 0) return 0;
   return Math.min(1, Math.max(0, (s.time - s.hero.floeStart) / s.hero.floeDuration));
 }
 

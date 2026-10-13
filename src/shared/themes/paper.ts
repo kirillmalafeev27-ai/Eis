@@ -13,7 +13,7 @@ function fiberDataUrl(base: string, fibers: string, size: number, seed: number, 
   ctx.fillRect(0, 0, size, size);
   const rng = mulberry32(seed);
   // длинные волокна цвета pageFibers — бесшовно (рисуем со сдвигами)
-  const n = Math.round(size * size * 0.0026);
+  const n = Math.round(size * size * (base === palette.page ? 0.0026 : 0.0011));
   for (let i = 0; i < n; i++) {
     const x = rng() * size;
     const y = rng() * size;
@@ -46,7 +46,7 @@ function textures(): Record<string, string> {
   if (cached) return cached;
   cached = {
     page: fiberDataUrl(palette.page, palette.pageFibers, 320, 11, 0.16),
-    card: fiberDataUrl(palette.card, '#e9e6da', 256, 23, 0.07),
+    card: fiberDataUrl(palette.card, '#efece2', 256, 23, 0.05),
     caption: fiberDataUrl(palette.caption, '#f4cf45', 192, 37, 0.08),
   };
   return cached;

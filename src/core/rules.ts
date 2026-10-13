@@ -201,7 +201,7 @@ function land(s: GameState, cell: number, floeLeftMs: number, ev: GameEvent[]): 
     return;
   }
   if (kind === 'near') {
-    s.hero.floeStart = -1;
+    s.hero.floeStart = null;
     s.hero.floeDuration = 0;
     s.hero.crackStage = 0;
     s.hero.countdown = 0;
@@ -232,7 +232,7 @@ function escape(s: GameState, cell: number, floeLeftMs: number, ev: GameEvent[])
   s.endTime = s.time;
   s.hero.target = null;
   s.route = null;
-  s.hero.floeStart = -1;
+  s.hero.floeStart = null;
   const fish = caughtFish(s);
   ev.push({ type: 'ESCAPED', cell, fish, stars: starsFor(true, fish), timeMs: s.time, floeLeftMs });
 }
@@ -257,7 +257,7 @@ function fall(s: GameState, cause: 'crack' | 'melt', ev: GameEvent[]): void {
   s.wetStart[cell] = -1;
   s.sinkAt[cell] = -1;
   if (s.hero.warmth <= 0) {
-    s.hero.floeStart = -1;
+    s.hero.floeStart = null;
     lose(s, 'cold', ev);
     return;
   }
@@ -305,10 +305,11 @@ export function nextScheduledTime(s: GameState): number {
 
 function nextDue(s: GameState): number {
   let t = s.melt.nextAt;
-  if (s.hero.floeStart >= 0) {
+  const floeStart = s.hero.floeStart;
+  if (floeStart !== null) {
     const endAt = heroFloeEndsAt(s);
     if (s.hero.crackStage < STAGES.length) {
-      t = Math.min(t, s.hero.floeStart + s.hero.floeDuration * STAGES[s.hero.crackStage]);
+      t = Math.min(t, floeStart + s.hero.floeDuration * STAGES[s.hero.crackStage]);
     }
     const nextN = s.hero.countdown === 0 ? Math.round(balance.rules.countdownFromMs / 1000) : s.hero.countdown - 1;
     if (nextN >= 1) t = Math.min(t, endAt - nextN * 1000);
@@ -332,11 +333,9 @@ function processDue(s: GameState, ev: GameEvent[]): boolean {
   if (s.status !== 'playing') return true;
 
   // 2. Таймер льдины под героем: стадии трещин, отсчёт, развал.
-  if (s.hero.floeStart >= 0) {
-    while (
-      s.hero.crackStage < STAGES.length &&
-      s.time >= s.hero.floeStart + s.hero.floeDuration * STAGES[s.hero.crackStage]
-    ) {
+  const start = s.hero.floeStart;
+  if (start !== null) {
+    while (s.hero.crackStage < STAGES.length && s.time >= start + s.hero.floeDuration * STAGES[s.hero.crackStage]) {
       s.hero.crackStage++;
       ev.push({ type: 'CRACK_STAGE', stage: s.hero.crackStage as 1 | 2 | 3 | 4, cell: s.hero.cell });
     }

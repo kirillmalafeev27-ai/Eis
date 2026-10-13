@@ -140,8 +140,10 @@ export const balance = {
     sunAngleDusk: -2.95,
     windowGlowMin: 0.35,
     windowGlowMax: 1.0,
-    vignetteStrengthDay: 0.32,
-    vignetteStrengthDusk: 0.52,
+    /** Виньетка Phaser 4: внутри радиуса доля цвета = sin(d/r · π · сила), за радиусом — 1. */
+    vignetteRadius: 0.86,
+    vignetteStrengthDay: 0.1,
+    vignetteStrengthDusk: 0.17,
     glintCount: 26,
     glintCountLow: 12,
   },

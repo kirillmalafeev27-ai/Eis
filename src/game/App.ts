@@ -11,6 +11,8 @@ import { ru } from '../i18n/ru';
 import { Orientation } from '../render/orientation';
 import { BootScene } from '../scenes/BootScene';
 import { GameScene, type SceneHost } from '../scenes/GameScene';
+import { sfxDe } from '../i18n/sfx.de';
+import type { WorldOptions } from '../render/WorldView';
 import { type Layout, createLayout } from '../shared/layout';
 import { PaceTracker } from '../shared/pace';
 import { QuestionPanel } from '../shared/QuestionPanel';
@@ -144,9 +146,26 @@ export class App implements SceneHost {
     this.userPaused = false;
     this.autoPaused = false;
     this.layout.setWorldNeeds(this.worldNeeds());
-    this.scene?.showRound(round, this.makeOrientation());
+    this.scene?.showRound(round, this.makeOrientation(), this.worldOptions());
     this.syncUi();
     this.updateReserve();
+  }
+
+  private worldOptions(): WorldOptions {
+    const level = levelById(this.levelId);
+    return {
+      hints: level.hints,
+      reducedMotion: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false,
+      lowQuality: false,
+      filters: true,
+      word: (w) => sfxDe[w],
+      sound: () => undefined,
+      fishToBasket: () => undefined,
+    };
+  }
+
+  showHints(): boolean {
+    return this.phase === 'play';
   }
 
   private worldNeeds() {
@@ -193,6 +212,7 @@ export class App implements SceneHost {
       if (!this.isPaused()) this.introLeft -= dtMs;
       if (this.introLeft <= 0) {
         this.phase = 'play';
+        this.scene?.startCue();
         this.syncUi();
       }
       return;
@@ -449,7 +469,42 @@ export class App implements SceneHost {
       start: (level: number) => this.startRound(level),
       orientation: () => this.layout.info().orientation,
       cellToClient: (a: number, l: number) => this.scene?.cellToClient(a, l) ?? null,
+      view: () => this.scene?.world?.debugInfo() ?? null,
+      // Отладка (13.7): только dev-сборка и тесты.
+      ageFloe: (k: number) => this.debugMutate((s) => {
+        if (s.hero.floeStart !== null) s.hero.floeStart -= s.hero.floeDuration * k;
+      }),
+      shiftTime: (ms: number) => this.debugMutate((s) => {
+        s.time += ms;
+        if (s.hero.floeStart !== null) s.hero.floeStart += ms;
+        s.wetStart = s.wetStart.map((v) => (v >= 0 ? v + ms : v));
+        s.sinkAt = s.sinkAt.map((v) => (v >= 0 ? v + ms : v));
+        s.melt = { ...s.melt, nextAt: s.melt.nextAt + ms };
+      }),
+      freezeMelt: () => this.debugMutate((s) => {
+        s.melt = { ...s.melt, nextAt: Infinity };
+      }),
+      infiniteWarmth: () => this.debugMutate((s) => {
+        s.hero = { ...s.hero, warmth: 999 };
+      }),
+      wetCell: (cell: number, ms: number) => this.debugMutate((s) => {
+        s.wetStart = s.wetStart.map((v, i) => (i === cell ? s.time : v));
+        s.sinkAt = s.sinkAt.map((v, i) => (i === cell ? s.time + ms : v));
+      }, [{ type: 'MELT_WARN', cell, sinkAt: 0 }]),
     };
+  }
+
+  /** Изменить состояние в обход редуктора — только для отладочной панели. */
+  private debugMutate(fn: (s: GameState) => void, events: GameEvent[] = []): void {
+    const round = this.round;
+    if (!round) return;
+    const s = { ...round.state, hero: { ...round.state.hero } };
+    fn(s);
+    const prev = round.state;
+    round.state = s;
+    const fixed = events.map((e) => (e.type === 'MELT_WARN' ? { ...e, sinkAt: s.sinkAt[e.cell] } : e));
+    if (fixed.length) this.scene?.world?.onEvents(fixed, s);
+    void prev;
   }
 
   destroy(): void {

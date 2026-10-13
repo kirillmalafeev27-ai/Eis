@@ -122,8 +122,8 @@ export function blobPath(rng: Rng, cx: number, cy: number, rx: number, ry: numbe
 /** Многоугольник льдины: скруглённый «квадрат» с рваными сторонами. */
 export function floePath(rng: Rng, cx: number, cy: number, half: number, irregular: number): Path {
   const out: Path = [];
-  const n = 26;
-  const squareness = 3.2 + rng() * 1.6;
+  const n = 30;
+  const squareness = 2.4 + rng() * 1.6;
   const phase = rng() * Math.PI * 2;
   for (let i = 0; i < n; i++) {
     const t = (i / n) * Math.PI * 2 + phase * 0.1;
@@ -392,34 +392,50 @@ export function fiberCore(ctx: Ctx, tearPath: Pt[], rng: Rng, width = 2.2, color
   ctx.restore();
 }
 
-/** Пятно намокания (7.4): растёт от краёв к центру по параметру t ∈ [0, 1]. */
+/**
+ * Пятно намокания (7.4): растёт от краёв к центру по параметру t ∈ [0, 1].
+ * Без canvas-фильтров: заливка формы и «выедание» середины мягкими неровными пятнами.
+ */
 export function wetStain(ctx: Ctx, path: Path, t: number, color: string, rng: Rng): void {
   if (t <= 0) return;
+  const k = Math.min(1, t);
   const b = pathBounds(path);
-  const reach = Math.max(b.w, b.h) * 0.55 * Math.min(1, t);
-  ctx.save();
-  tracePath(ctx, path);
-  ctx.clip();
-  ctx.lineJoin = 'round';
-  // несколько неровных колец: края пятна рваные, как у промокшей бумаги
   const c = centroid(path);
-  for (let k = 0; k < 3; k++) {
-    const wob = path.map((p) => {
-      const j = 1 + (rng() - 0.5) * 0.08;
-      return { x: c.x + (p.x - c.x) * j, y: c.y + (p.y - c.y) * j };
-    });
-    tracePath(ctx, wob);
-    ctx.strokeStyle = rgba(color, 0.42 + 0.18 * t);
-    ctx.lineWidth = reach * 2 * (0.75 + 0.12 * k);
-    ctx.filter = `blur(${2 + k * 2}px)`;
-    ctx.stroke();
+  const R = Math.max(b.w, b.h) * 0.62;
+  const layer = makeCanvas(ctx.canvas.width, ctx.canvas.height);
+  const g = ctx2d(layer);
+  tracePath(g, path);
+  g.fillStyle = rgba(color, 0.5 + 0.3 * k);
+  g.fill();
+  // сухая середина сжимается к центру; край неровный — несколько смещённых пятен
+  const inner = R * (1 - k) * 0.95;
+  if (inner > 1) {
+    g.globalCompositeOperation = 'destination-out';
+    const lumps = 5;
+    for (let i = 0; i < lumps; i++) {
+      const a = (i / lumps) * Math.PI * 2 + rng() * 0.8;
+      const off = inner * 0.22 * rng();
+      const x = c.x + Math.cos(a) * off;
+      const y = c.y + Math.sin(a) * off;
+      const r = inner * (0.82 + rng() * 0.3);
+      const gr = g.createRadialGradient(x, y, r * 0.55, x, y, r);
+      gr.addColorStop(0, 'rgba(0,0,0,1)');
+      gr.addColorStop(1, 'rgba(0,0,0,0)');
+      g.fillStyle = gr;
+      g.fillRect(0, 0, layer.width, layer.height);
+    }
+    g.globalCompositeOperation = 'source-over';
   }
-  ctx.filter = 'none';
-  if (t > 0.85) {
-    ctx.fillStyle = rgba(color, (t - 0.85) * 2.4);
-    ctx.fillRect(b.x, b.y, b.w, b.h);
-  }
-  ctx.restore();
+  // тёмные подтёки у самого края
+  g.save();
+  tracePath(g, path);
+  g.clip();
+  tracePath(g, path);
+  g.strokeStyle = rgba(color, 0.35 + 0.3 * k);
+  g.lineWidth = 3 + 6 * k;
+  g.stroke();
+  g.restore();
+  ctx.drawImage(layer, 0, 0);
 }
 
 /** Силуэт объекта, залитый цветом тени и заранее размытый (7.4). */
@@ -545,26 +561,34 @@ export function bubble(ctx: Ctx, w: number, h: number, tail: 'left' | 'right' | 
   ctx.restore();
 }
 
-/** Бумажный след сапога: подошва и каблук (7.4). */
+/**
+ * Бумажный след сапога (7.4): подошва с округлым носком, узким подъёмом и отдельным
+ * каблуком. Возвращает два контура — подошву и каблук — в координатах (x, y), носок вверх.
+ */
 export function bootPrint(ctx: Ctx, x: number, y: number, size: number, angle: number, mirror: boolean): Path[] {
+  void ctx;
   const sole: Path = [];
-  const heel: Path = [];
-  const n = 18;
+  const n = 28;
   for (let i = 0; i < n; i++) {
     const t = (i / n) * Math.PI * 2;
-    sole.push({ x: Math.cos(t) * size * 0.3, y: -size * 0.18 + Math.sin(t) * size * 0.34 });
-    heel.push({ x: Math.cos(t) * size * 0.24, y: size * 0.33 + Math.sin(t) * size * 0.18 });
+    // носок шире, к подъёму сужается
+    const c = Math.cos(t);
+    const sn = Math.sin(t);
+    const w = size * (sn < 0 ? 0.3 : 0.23 + 0.04 * sn);
+    sole.push({ x: c * w + (sn < 0 ? size * 0.03 * Math.cos(t * 2) : 0), y: -size * 0.12 + sn * size * 0.33 });
+  }
+  const heel: Path = [];
+  for (let i = 0; i < 20; i++) {
+    const t = (i / 20) * Math.PI * 2;
+    heel.push({ x: Math.cos(t) * size * 0.22, y: size * 0.38 + Math.sin(t) * size * 0.14 });
   }
   const tr = (p: Pt): Pt => {
     const px = mirror ? -p.x : p.x;
     const c = Math.cos(angle);
-    const s = Math.sin(angle);
-    return { x: x + px * c - p.y * s, y: y + px * s + p.y * c };
+    const sn = Math.sin(angle);
+    return { x: x + px * c - p.y * sn, y: y + px * sn + p.y * c };
   };
-  const a = sole.map(tr);
-  const b = heel.map(tr);
-  void ctx;
-  return [a, b];
+  return [sole.map(tr), heel.map(tr)];
 }
 
 /** Снежинка-заряд: шесть лучей с веточками (7.4). */
