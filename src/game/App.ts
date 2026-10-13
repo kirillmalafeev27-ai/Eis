@@ -63,7 +63,6 @@ export interface IceOptions {
   onFinish?: (r: FinishResult) => void;
 }
 
-
 /** Типичный размер плашки с корзиной (CSS px): высота в портрете, ширина в ландшафте. */
 const HUD_FALLBACK = { h: 62, w: 150 };
 type Phase = 'boot' | 'menu' | 'levels' | 'intro' | 'play' | 'finale' | 'results' | 'contrast';
@@ -178,6 +177,7 @@ export class App implements SceneHost {
     this.panel.onSound = (name) =>
       this.sfx(name === 'correct' ? ['correct', 'click'] : name === 'wrong' ? ['wrong'] : ['flip']);
     this.panel.setReducedMotion(this.reducedMotion());
+    this.layout.root.classList.toggle('is-calm', this.reducedMotion());
     this.header = new JumpHeader(this.panel.header);
     this.basket = new BasketWidget(
       this.layout.worldOverlay,
@@ -371,7 +371,18 @@ export class App implements SceneHost {
   }
 
   private word(w: SfxWord): string {
-    return this.settings.sfxLang === 'ru' ? sfxRu[w] : sfxDe[w];
+    const text = this.settings.sfxLang === 'ru' ? sfxRu[w] : sfxDe[w];
+    this.log('word', text);
+    return text;
+  }
+
+  /** Журнал звуков и слов для сквозных тестов (только ?test): у события есть отклик. */
+  private readonly feedback: string[] = [];
+
+  private log(kind: 'sound' | 'word', name: string): void {
+    if (!this.test) return;
+    this.feedback.push(`${kind}:${name}`);
+    if (this.feedback.length > 200) this.feedback.shift();
   }
 
   showHints(): boolean {
@@ -396,7 +407,10 @@ export class App implements SceneHost {
       return Math.max(m.near, (size + 8) / min);
     };
     return {
-      portrait: Orientation.cellsNeeded('portrait', level.rows + 2, level.length, { ...m, near: hudNear('portrait') }),
+      portrait: Orientation.cellsNeeded('portrait', level.rows + 2, level.length, {
+        ...m,
+        near: hudNear('portrait'),
+      }),
       landscape: Orientation.cellsNeeded('landscape', level.rows + 2, level.length, {
         ...m,
         near: hudNear('landscape'),
@@ -805,6 +819,7 @@ export class App implements SceneHost {
       muted: this.settings.muted,
     });
     this.panel.setReducedMotion(this.reducedMotion());
+    this.layout.root.classList.toggle('is-calm', this.reducedMotion());
     const level = levelById(this.levelId);
     this.scene?.setWorldOptions({
       hints: effectiveHints(level.hints, this.settings.hints),
@@ -846,6 +861,7 @@ export class App implements SceneHost {
   }
 
   private sfx(names: SfxName[], pan = 0): void {
+    for (const n of names) this.log('sound', n);
     names.forEach((n, i) =>
       this.mixer.play(n, presets[n], {
         pan,
@@ -963,7 +979,8 @@ export class App implements SceneHost {
     // Рыба — на тонкой льдине ближе к центру кадра, где виньетка почти не темнит.
     const midA = Math.floor((grid.height - 1) / 2);
     let fishL = 1;
-    for (let l = 1; l < grid.length; l += 3) if (Math.abs(l - (grid.length - 1) / 2) < Math.abs(fishL - (grid.length - 1) / 2)) fishL = l;
+    for (let l = 1; l < grid.length; l += 3)
+      if (Math.abs(l - (grid.length - 1) / 2) < Math.abs(fishL - (grid.length - 1) / 2)) fishL = l;
     const fishCell = index(grid, midA, fishL);
     const s = createState(
       level,
@@ -1054,6 +1071,7 @@ export class App implements SceneHost {
         this.scene?.sampleLuminance(pts, r) ?? Promise.resolve([]),
       contrastPoints: () => this.scene?.world?.contrastPoints() ?? null,
       grade: (m: number[] | null) => setGradeOverride(m),
+      feedback: () => this.feedback.slice(),
       // Отладка (13.7): только dev-сборка и тесты.
       ageFloe: (k: number) =>
         this.debugMutate((s) => {

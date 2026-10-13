@@ -232,6 +232,10 @@ export class WorldView {
             this.opts.sound('landThick', p.x);
             this.juice.burst('snow', p.x, p.y - 4, 10);
             this.say('stapf', p.x, p.y - c * 0.6, e.cell, true);
+          } else {
+            // Берег — тоже снег: хруст и снежная пыль, но без слова.
+            this.opts.sound('landThick', p.x);
+            this.juice.burst('snow', p.x, p.y - 4, 6);
           }
           break;
         }
@@ -342,7 +346,7 @@ export class WorldView {
           const land = this.cellPoint(s, e.cell);
           this.scene.time.delayedCall(balance.anim.jumpMs + 30, () => {
             this.hero.win(door ? [land, door] : [land]);
-            this.banks.flashWindow();
+            this.banks.flashWindow(this.opts.reducedMotion);
           });
           this.opts.sound('win', land.x);
           this.say(knapp ? 'knapp' : 'geschafft', land.x, land.y - c * 0.6, e.cell);
@@ -372,16 +376,22 @@ export class WorldView {
     this.lastFlashAt = this.time;
     const p = o.toWorld(aOf(this.state.grid, cell), lOf(this.state.grid, cell));
     this.flash?.destroy();
-    this.flash = this.scene.add.rectangle(
-      p.x,
-      p.y,
-      o.cell * 0.9,
-      o.cell * 0.9,
-      0xffffff,
-      this.opts.reducedMotion ? 0.25 : 0.45,
-    );
+    this.flash = this.scene.add.rectangle(p.x, p.y, o.cell * 0.9, o.cell * 0.9, 0xffffff, 0.45);
     this.layers.overlay.add(this.flash);
     const f = this.flash;
+    // Без вспышки в «меньше движения»: подсветка плавно проявляется и гаснет.
+    if (this.opts.reducedMotion) {
+      f.setAlpha(0);
+      this.scene.tweens.add({
+        targets: f,
+        alpha: 0.22,
+        yoyo: true,
+        duration: balance.anim.deniedFlashMs / 2,
+        ease: 'Sine.InOut',
+        onComplete: () => f.destroy(),
+      });
+      return;
+    }
     this.scene.tweens.add({
       targets: f,
       alpha: 0,

@@ -1720,17 +1720,36 @@
   padding: 4px 8px;
 }
 
+/* «Меньше движения» (11.6.1): без прыжков, тряски и пульсаций — и по системной
+   настройке, и по переключателю в настройках игры (класс is-calm на корне). */
 @media (prefers-reduced-motion: reduce) {
   .menu-cover,
   .caption-sticker,
   .tut-bubble,
   .res-fish.is-pop,
-  .res-star.is-pop {
+  .res-star.is-pop,
+  .basket-slot.is-caught .fish-ico,
+  .thermo-mark.is-lost {
     animation: none;
   }
   .res-card {
     transition: opacity 120ms;
   }
+}
+
+.series-root.is-calm .menu-cover,
+.series-root.is-calm .caption-sticker,
+.series-root.is-calm .tut-bubble,
+.series-root.is-calm .res-fish.is-pop,
+.series-root.is-calm .res-star.is-pop,
+.series-root.is-calm .basket-slot.is-caught .fish-ico,
+.series-root.is-calm .thermo-mark.is-lost,
+.series-root.is-calm .sf-pop {
+  animation: none;
+}
+
+.series-root.is-calm .res-card {
+  transition: opacity 120ms;
 }
 
 /* Большой экран: итоги крупнее, чтобы карточки не терялись. */

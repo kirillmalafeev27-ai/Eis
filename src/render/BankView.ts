@@ -207,8 +207,8 @@ export class BankView {
   }
 
   /** Окно вспыхивает ярче — победа (9.2). */
-  flashWindow(): void {
-    if (!this.windowGlow) return;
+  flashWindow(reducedMotion = false): void {
+    if (!this.windowGlow || reducedMotion) return;
     this.scene.tweens.add({
       targets: this.windowGlow,
       scale: this.windowGlow.scale * 1.5,
