@@ -76,10 +76,15 @@ export class HintsView {
       const from = st.from === s.hero.cell ? { x: hero.x, y: hero.y } : at(st.from);
       const to = at(st.to);
       const ang = Math.atan2(to.y - from.y, to.x - from.x);
-      const off = st.from === s.hero.cell ? 0.33 : 0.12;
+      const own = st.from === s.hero.cell;
+      const off = own ? 0.33 : 0.12;
+      // След со своей льдины не ложится на героя: при прыжке вверх или вниз по экрану
+      // он стоит сбоку, у правой ноги (эффекты не закрывают героя, раздел 16).
+      const side = own && Math.abs(Math.sin(ang)) > 0.5 ? 0.24 : 0;
+      const along = own && side ? 0.18 : off;
       const key = this.mode === 'risk' ? K.print(st.risk.level) : K.printRoute;
       setArt(img, this.art, key);
-      img.setPosition(from.x + Math.cos(ang) * c * off, from.y + Math.sin(ang) * c * off - 4);
+      img.setPosition(from.x + Math.cos(ang) * c * along + side * c, from.y + Math.sin(ang) * c * along - 4);
       img.setRotation(ang + Math.PI / 2);
       img.setScale((i % 2 ? -1 : 1) / this.art.s, 1 / this.art.s);
       img.setAlpha(1);
