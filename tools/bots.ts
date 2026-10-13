@@ -24,12 +24,20 @@ function env(s: GameState, penalties: Penalties): RouteEnv {
   return { ...routeEnv(s), penalties };
 }
 
-/** Сетка после прохода маршрута: покинутые льдины утонули. */
+/** Намокшие льдины к тому времени утонут — на обратном пути на них не рассчитываем. */
+function sinkWet(s: GameState, grid: Grid): Grid {
+  const changes: [number, 'water'][] = [];
+  for (let c = 0; c < s.sinkAt.length; c++)
+    if (s.sinkAt[c] >= 0 && c !== s.hero.cell && isFloe(grid.cells[c])) changes.push([c, 'water']);
+  return changes.length ? withCells(grid, changes) : grid;
+}
+
+/** Сетка после прохода маршрута: покинутые льдины утонули, намокшие — тоже. */
 function gridAfter(s: GameState, route: Route): Grid {
   const changes: [number, 'water'][] = [];
   const cells = [s.hero.cell, ...route.steps.slice(0, -1).map((st) => st.to)];
   for (const c of cells) if (isFloe(s.grid.cells[c])) changes.push([c, 'water']);
-  return withCells(s.grid, changes);
+  return sinkWet(s, withCells(s.grid, changes));
 }
 
 function waitingFish(s: GameState): number[] {
@@ -106,7 +114,7 @@ export function makeBot(kind: BotKind): Bot {
           const sunk: [number, 'water'][] = [];
           for (const c of [from, ...r.steps.slice(0, -1).map((st) => st.to)])
             if (isFloe(grid.cells[c])) sunk.push([c, 'water']);
-          grid = withCells(grid, sunk);
+          grid = sinkWet(s, withCells(grid, sunk));
           from = r.target;
         }
         if (ok && cost < bestCost) {
