@@ -71,6 +71,10 @@ export class SettingsScreen {
       }
       return el('div', 'set-row set-row-choice', {}, [el('span', 'set-label', {}, [label]), group]);
     };
+    // Автопереключение качества «тихо отмечается в настройках» (13.6.4).
+    const qualityNote = el('p', 'set-note', {}, [
+      cur.qualityAuto && cur.quality === 'low' ? ru.settingsScreen.qualityAuto : '',
+    ]);
     const order: HintMode[] = ['none', 'route', 'risk'];
     const cap = levelHints ? order.indexOf(levelHints) : 2;
     const t = ru.settingsScreen;
@@ -93,8 +97,13 @@ export class SettingsScreen {
               ['high', t.qualityHigh],
               ['low', t.qualityLow],
             ],
-            (v) => (cur.quality = v),
+            (v) => {
+              cur.quality = v;
+              cur.qualityAuto = false;
+              qualityNote.textContent = t.qualityNext;
+            },
           ),
+          qualityNote,
           choice(
             t.hints,
             cur.hints,

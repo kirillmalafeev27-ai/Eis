@@ -18,7 +18,7 @@ import { Mixer } from '../shared/audio/mixer';
 import { type Layout, createLayout } from '../shared/layout';
 import { PaceTracker } from '../shared/pace';
 import { QuestionPanel } from '../shared/QuestionPanel';
-import type { QuestionProvider } from '../shared/questions/types';
+import type { Question, QuestionProvider } from '../shared/questions/types';
 import { type KeyValueStorage, localStorageWithPrefix } from '../shared/storage';
 import { paperTheme } from '../shared/themes/paper';
 import { BasketWidget } from '../ui/BasketWidget';
@@ -201,7 +201,11 @@ export class App implements SceneHost {
       render: { antialias: true, roundPixels: false, powerPreference: 'high-performance' },
       scene: [BootScene, GameScene],
       callbacks: {
-        preBoot: (game) => game.registry.set('quality', this.settings.quality),
+        preBoot: (game) => {
+          game.registry.set('quality', this.settings.quality);
+          // Слова-звуки текущего языка рисуются в атлас при загрузке, а не в разгар раунда.
+          game.registry.set('words', Object.values(this.settings.sfxLang === 'ru' ? sfxRu : sfxDe));
+        },
       },
     });
     this.game.events.on('boot-progress', (k: number) => this.loading?.progress(k));
@@ -839,14 +843,22 @@ export class App implements SceneHost {
   }
 
   /** Автопереключение качества: средний FPS три секунды ниже 45 — один раз за сессию (13.6.4). */
+  private autoQualityDone = false;
+
   private watchFps(dtMs: number): void {
-    if (this.settings.quality === 'low' || this.phase !== 'play' || this.test) return;
+    // В тестах сторож выключен (программный WebGL медленный), кроме проверки самого сторожа.
+    if (this.settings.quality === 'low' || this.phase !== 'play' || this.autoQualityDone) return;
+    if (this.test && !this.params.has('fpswatch')) return;
     this.fpsTimer += dtMs;
     if (this.fpsTimer < 1000) return;
     this.fpsTimer = 0;
-    const fps = this.game.loop.actualFps;
+    // ?test&fakefps=N — подменить FPS, чтобы проверить сторож независимо от машины.
+    const fake = this.test ? Number(this.params.get('fakefps')) : NaN;
+    const fps = Number.isFinite(fake) && fake > 0 ? fake : this.game.loop.actualFps;
     this.fpsLow = fps < balance.quality.lowFpsThreshold ? this.fpsLow + 1 : 0;
     if (this.fpsLow >= balance.quality.lowFpsSeconds) {
+      // Один раз за сессию: если игрок вернёт высокое качество, сторож больше не вмешивается.
+      this.autoQualityDone = true;
       this.settings = { ...this.settings, quality: 'low', qualityAuto: true };
       saveSettings(this.storage, this.settings);
       this.applySettings();
@@ -1072,6 +1084,9 @@ export class App implements SceneHost {
       contrastPoints: () => this.scene?.world?.contrastPoints() ?? null,
       grade: (m: number[] | null) => setGradeOverride(m),
       feedback: () => this.feedback.slice(),
+      settings: () => ({ ...this.settings }),
+      showQuestion: (q: Question) => this.panel.debugShow(q),
+      fps: () => this.game.loop.actualFps,
       // Отладка (13.7): только dev-сборка и тесты.
       ageFloe: (k: number) =>
         this.debugMutate((s) => {

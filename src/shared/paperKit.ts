@@ -246,13 +246,12 @@ export function grainTile(rng: Rng, size: number, density = 1): HTMLCanvasElemen
   if (hit) return hit;
   const c = makeCanvas(size, size);
   const ctx = ctx2d(c);
-  ctx.fillStyle = '#808080';
-  ctx.fillRect(0, 0, size, size);
-  // мелкий шум
-  const img = ctx.getImageData(0, 0, size, size);
+  // мелкий шум; createImageData, а не getImageData — чтение пикселей обратно с GPU дорогое
+  const img = ctx.createImageData(size, size);
   for (let i = 0; i < img.data.length; i += 4) {
     const v = 128 + (rng() - 0.5) * 38;
     img.data[i] = img.data[i + 1] = img.data[i + 2] = v;
+    img.data[i + 3] = 255;
   }
   ctx.putImageData(img, 0, 0);
   // волокна — рисуем 9 раз со сдвигами, чтобы плитка была бесшовной

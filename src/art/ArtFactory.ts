@@ -56,6 +56,9 @@ export interface FrameRef {
 export const BAKED_SUN: Pt = { x: -0.6, y: -0.8 };
 
 const ATLAS = 'art-atlas';
+/** Размеры слов-звуков: обычное и мелкое (juice.word). */
+const WORD_SIZES = [46, 34] as const;
+const wordKey = (text: string, size: number) => `word:${text}:${size}`;
 /** Сколько работы генерации подряд, прежде чем отдать кадр экрану загрузки. */
 const YIELD_MS = 24;
 
@@ -77,6 +80,8 @@ export class ArtFactory {
   constructor(
     private readonly textures: Phaser.Textures.TextureManager,
     quality: 'high' | 'low',
+    /** Слова-звуки, которые заранее кладутся в атлас (остальные рисуются по первому требованию). */
+    private readonly wordList: readonly string[] = [],
   ) {
     this.s = (quality === 'low' ? balance.layout.cellPxLow : balance.layout.cellPx) / balance.layout.cellPx;
   }
@@ -236,6 +241,12 @@ export class ArtFactory {
     steps.push(() => put(K.p.ripple, ring(s, 26, 2.2, palette.water.foam)));
     steps.push(() => put(K.p.splash, softDot(s, 6, palette.water.foam, 1)));
     steps.push(() => put(K.vignette, vignetteTexture(256)));
+    // Слова-звуки: новая текстура посреди раунда — это загрузка на GPU и рывок кадра.
+    for (const text of this.wordList) {
+      steps.push(() => {
+        for (const size of WORD_SIZES) put(wordKey(text, size), this.drawWord(text, size));
+      });
+    }
 
     this.stepMs = [];
     // Кадр экрану загрузки отдаём не после каждого шага, а примерно раз в полтора кадра
@@ -316,9 +327,16 @@ export class ArtFactory {
 
   /** Слово-звук: вырезанные буквы разных цветов (7.4), кэш по тексту. */
   word(text: string, size = 46): FrameRef {
-    const id = `word:${text}:${size}`;
-    const hit = this.words.get(id);
+    const id = wordKey(text, size);
+    const hit = this.words.get(id) ?? this.refs.get(id);
     if (hit) return hit;
+    this.addCanvasTexture(id, this.drawWord(text, size));
+    const ref = this.ref(id);
+    this.words.set(id, ref);
+    return ref;
+  }
+
+  private drawWord(text: string, size: number): HTMLCanvasElement {
     const colors = [
       palette.caption,
       palette.hero.scarf,
@@ -326,16 +344,12 @@ export class ArtFactory {
       palette.hints.safe,
       palette.warmth.full,
     ];
-    const c = paperWord(text, {
+    return paperWord(text, {
       colors,
       font: "'Fredoka', 'Rubik', sans-serif",
       size: size * this.s,
       shadow: palette.shadow,
     });
-    this.addCanvasTexture(id, c);
-    const ref = this.ref(id);
-    this.words.set(id, ref);
-    return ref;
   }
 }
 

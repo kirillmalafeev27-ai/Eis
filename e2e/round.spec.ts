@@ -89,3 +89,31 @@ test('поворот экрана посреди раунда: река и па�
   await answerUntil(page, async () => (await heroCell(page)) !== mid);
   expect(errors).toEqual([]);
 });
+
+test('сторож FPS один раз переводит на экономное качество и тихо отмечает это', async ({ page }) => {
+  const errors = watchErrors(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await startLevel(page, 3, '&fpswatch&fakefps=20');
+  await page.waitForFunction(
+    () => (window.__ice as unknown as { settings(): { quality: string } }).settings().quality === 'low',
+    null,
+    { timeout: 30_000 },
+  );
+  const s = await page.evaluate(() =>
+    (window.__ice as unknown as { settings(): { qualityAuto: boolean } }).settings(),
+  );
+  expect(s.qualityAuto).toBe(true);
+  await page.keyboard.press('p');
+  await page.getByRole('button', { name: 'Настройки' }).click();
+  await expect(page.locator('.screen-settings')).toContainText('Включено само');
+  // Игрок вернул высокое качество — сторож больше не вмешивается в этой сессии.
+  await page.getByRole('radio', { name: 'Высокое' }).click();
+  await page.getByRole('button', { name: 'Готово' }).click();
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(4500);
+  const after = await page.evaluate(() =>
+    (window.__ice as unknown as { settings(): { quality: string } }).settings(),
+  );
+  expect(after.quality).toBe('high');
+  expect(errors).toEqual([]);
+});

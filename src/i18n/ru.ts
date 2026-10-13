@@ -73,6 +73,8 @@ export const ru = {
     quality: 'Качество графики',
     qualityHigh: 'Высокое',
     qualityLow: 'Экономное',
+    qualityAuto: 'Включено само: игра шла медленно',
+    qualityNext: 'Чёткость текстур сменится при следующем запуске',
     hints: 'Подсказки маршрута',
     hintsRisk: 'Маршрут с риском',
     hintsRoute: 'Только маршрут',

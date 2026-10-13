@@ -5,6 +5,9 @@ import type { Question, QuestionProvider } from './questions/types';
  * 2–4 варианта-фишки. Время ответа — performance.now() от момента, когда вопрос стал
  * активным, до клика, без пауз (12.5). Следующий вопрос загружается заранее (12.4).
  */
+
+/** Ниже этого шрифт фишки не ужимается даже ради самого длинного ответа. */
+const HARD_MIN_PX = 11;
 export type PanelMode = 'off' | 'intro' | 'active' | 'ready' | 'paused';
 
 export interface QuestionPanelStrings {
@@ -118,6 +121,14 @@ export class QuestionPanel {
     } else {
       this.stopClock();
     }
+    this.updateChips();
+  }
+
+  /** Для тестов раскладки: сразу показать данный вопрос (без отчёта поставщику). */
+  debugShow(q: Question): void {
+    this.render(q);
+    this.current = q;
+    this.busy = false;
     this.updateChips();
   }
 
@@ -238,20 +249,42 @@ export class QuestionPanel {
       size -= 1;
       this.prompt.style.fontSize = `${size}px`;
     }
+    const range = document.createRange();
+    let common = Infinity;
     for (const chip of this.chips) {
       const t = chip.querySelector('.qp-text') as HTMLElement;
       let s = Math.min(22, max);
-      t.style.fontSize = `${s}px`;
-      // Сначала ужимаем так, чтобы самое длинное слово встало целиком
-      // (Lebensmittelgeschäft); рвать слово по слогам — только если не вышло и так.
+      const set = () => (t.style.fontSize = `${s}px`);
+      // Ширина текста дробная, а scrollWidth округлён: слово шире рамки на долю пикселя
+      // считалось бы поместившимся. Меряем сам текст.
+      const tooWide = () => {
+        range.selectNodeContents(t);
+        return range.getBoundingClientRect().width > t.getBoundingClientRect().width - 0.5;
+      };
+      set();
+      // 1. Самое длинное слово (Lebensmittelgeschäft) должно встать в строку целиком, без
+      //    переноса: строгая проверка, иначе браузер перенесёт последнюю букву на строку,
+      //    которую обрежет край фишки.
       t.style.overflowWrap = 'normal';
       t.style.hyphens = 'manual';
-      while (s > min - 2 && (t.scrollWidth > t.clientWidth + 1 || t.scrollHeight > t.clientHeight + 1)) {
+      while (s > min - 2 && (tooWide() || t.scrollHeight > t.clientHeight)) {
         s -= 1;
-        t.style.fontSize = `${s}px`;
+        set();
       }
       t.style.overflowWrap = '';
       t.style.hyphens = '';
+      // 2. Если не вышло — переносим по слогам (мягкие переносы, hyphens) и ужимаем дальше,
+      //    пока текст не встанет по высоте: лучше мелко, чем обрезанный ответ.
+      while (s > HARD_MIN_PX && (t.scrollHeight > t.clientHeight || tooWide())) {
+        s -= 1;
+        set();
+      }
+      common = Math.min(common, s);
+    }
+    // Один размер на все фишки: размер шрифта не должен подсказывать ответ.
+    for (const chip of this.chips) {
+      const t = chip.querySelector('.qp-text') as HTMLElement;
+      t.style.fontSize = `${common}px`;
     }
   };
 

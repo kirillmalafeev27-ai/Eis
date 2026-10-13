@@ -24,7 +24,8 @@ export class BootScene extends Phaser.Scene {
     } catch {
       /* шрифты не загрузились — рисуем запасным */
     }
-    const art = new ArtFactory(this.textures, quality);
+    const words = (this.registry.get('words') as string[] | undefined) ?? [];
+    const art = new ArtFactory(this.textures, quality, words);
     await art.generate((k) => this.game.events.emit('boot-progress', k));
     this.registry.set('art', art);
     this.game.events.emit('boot-done', art.generationMs);

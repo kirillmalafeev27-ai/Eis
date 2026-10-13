@@ -254,6 +254,40 @@ export class FloeView {
   }
 
   /**
+   * Покинутая льдина раскалывается надвое на каждом прыжке, поэтому без новых текстур:
+   * обе половины — тот же кадр атласа (и тот же холст трещин) с обрезкой.
+   */
+  private splitByCrop(f: Floe, drift: number): void {
+    if (f.pieces.length) return;
+    const vertical = cellHash(this.seed, f.cell, 23) < 0.5;
+    const sources = f.crack ? [f.img, f.crack.img] : [f.img];
+    for (let i = 0; i < 2; i++) {
+      const dir = vertical ? { x: i ? 1 : -1, y: 0 } : { x: 0, y: i ? 1 : -1 };
+      for (const src of sources) {
+        const fw = src.frame.width;
+        const fh = src.frame.height;
+        const img = this.scene.add.image(src.x, src.y, src.texture.key, src.frame.name);
+        img.setOrigin(src.originX, src.originY);
+        img.setScale(src.scaleX, src.scaleY);
+        if (vertical) img.setCrop(i * fw * 0.5, 0, fw * 0.5, fh);
+        else img.setCrop(0, i * fh * 0.5, fw, fh * 0.5);
+        f.body.add(img);
+        f.pieces.push(img);
+        this.scene.tweens.add({
+          targets: img,
+          x: src.x + dir.x * drift,
+          y: src.y + dir.y * drift,
+          rotation: (i ? 1 : -1) * 0.05,
+          duration: 260,
+          ease: 'Back.Out',
+        });
+      }
+    }
+    f.img.setVisible(false);
+    f.crack?.img.setVisible(false);
+  }
+
+  /**
    * Утопить льдину. 'left' — покинутая героем (раскол и уход под воду за 300 мс),
    * 'melt' — растворяется с пузырями, 'break' — развал под героем, 'quiet' — без шума.
    */
@@ -281,7 +315,8 @@ export class FloeView {
         );
         floe.crack.tex.refresh();
       }
-      this.split(floe, mode === 'left' ? 2 : 3, mode === 'left' ? 6 : balance.anim.splitDriftPx);
+      if (mode === 'left') this.splitByCrop(floe, 6);
+      else this.split(floe, 3, balance.anim.splitDriftPx);
     }
     const targets = floe.pieces.length ? floe.pieces : [floe.img, ...(floe.crack ? [floe.crack.img] : [])];
     const dark = Phaser.Display.Color.ValueToColor(hex(palette.water.mid));
@@ -311,12 +346,14 @@ export class FloeView {
   }
 
   private destroyFloe(f: Floe): void {
-    this.clearCracks(f);
+    // Сначала куски: половины покинутой льдины ссылаются на холст трещин.
     for (const p of f.pieces) {
       const key = p.getData('tex') as string | undefined;
       p.destroy();
       if (key) this.scene.textures.remove(key);
     }
+    f.pieces.length = 0;
+    this.clearCracks(f);
     if (f.wet) {
       f.wet.a.destroy();
       f.wet.b.destroy();

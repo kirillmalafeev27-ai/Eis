@@ -423,6 +423,7 @@
   width: 100%;
   max-height: 100%;
   overflow: hidden;
+  line-height: 1.1;
   text-align: center;
   -webkit-hyphens: auto;
   hyphens: auto;
@@ -773,6 +774,13 @@
 
 .series-root[data-orient='landscape'] .basket-buttons {
   flex-direction: column;
+}
+
+/* Узкий экран: у фишек меньше полей — длинным немецким словам нужно место. */
+@media (max-width: 420px) {
+  .qp-chip {
+    padding: 4px 8px;
+  }
 }
 
 /* На узком экране плашка не должна вылезать за край: прячем подписи клавиш. */
@@ -1258,6 +1266,10 @@
 .set-note {
   margin: -4px 0 8px !important;
   font-size: 13px !important;
+}
+
+.set-note:empty {
+  display: none;
 }
 
 /* ───────────────────────── интро и обучение ───────────────────────── */
