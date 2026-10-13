@@ -1,0 +1,6 @@
+dist
+node_modules
+PLAN.md
+test-results
+playwright-report
+screenshots

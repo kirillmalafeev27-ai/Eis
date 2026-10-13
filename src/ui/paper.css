@@ -1,0 +1,98 @@
+/* Тема «бумага» общей раскладки (11.1.4). Цвета — только через переменные из palette.ts. */
+
+.series-root {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background-color: var(--page);
+  background-image: var(--page-tex);
+  background-size: 320px 320px;
+  color: var(--ink);
+  font-family: 'Rubik', system-ui, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+
+.series-root *,
+.series-root *::before,
+.series-root *::after {
+  box-sizing: border-box;
+}
+
+.series-layout {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  gap: var(--gap, 12px);
+  padding: max(var(--gap, 12px), env(safe-area-inset-top)) max(var(--gap, 12px), env(safe-area-inset-right))
+    max(var(--gap, 12px), env(safe-area-inset-bottom)) max(var(--gap, 12px), env(safe-area-inset-left));
+}
+
+.series-root[data-orient='portrait'] .series-layout {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) var(--q-size, 360px);
+}
+
+.series-root[data-orient='landscape'] .series-layout {
+  grid-template-columns: minmax(0, 1fr) var(--q-size, 400px);
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.series-panel {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+}
+
+.series-card-shadow {
+  position: absolute;
+  inset: 0;
+  background: var(--shadow);
+  opacity: 0.55;
+  transform: translate(2px, 6px);
+  filter: blur(7px);
+}
+
+.series-card {
+  position: absolute;
+  inset: 0;
+  background-color: var(--card);
+  background-image: var(--card-tex);
+  background-size: 256px 256px;
+}
+
+.series-world-host {
+  position: absolute;
+  inset: 7px;
+  overflow: hidden;
+  background: var(--water-deep);
+}
+
+.series-world-host canvas {
+  display: block;
+  outline: none;
+}
+
+.series-world-overlay {
+  position: absolute;
+  inset: 7px;
+  pointer-events: none;
+}
+
+.series-world-overlay > * {
+  pointer-events: auto;
+}
+
+.series-screens {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.series-screens > * {
+  pointer-events: auto;
+}
