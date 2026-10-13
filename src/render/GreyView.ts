@@ -1,4 +1,4 @@
-import Phaser from 'phaser';
+import type Phaser from 'phaser';
 import { balance } from '../config/balance';
 import type { HintMode } from '../config/levels';
 import { palette, hex } from '../config/palette';
