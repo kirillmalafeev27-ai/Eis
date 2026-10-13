@@ -180,10 +180,10 @@
     "prompt": "ограничение скорости",
     "promptLang": "ru",
     "options": [
-      "die Geschwindigkeitsbegrenzung",
+      "die Geschwindig\u00adkeits\u00adbegrenzung",
       "die Umleitung",
-      "der Fußgängerüberweg",
-      "die Autobahnauffahrt"
+      "der Fußgänger\u00adüberweg",
+      "die Autobahn\u00adauffahrt"
     ],
     "optionsLang": "de",
     "correctIndex": 0
@@ -192,7 +192,7 @@
     "id": "tr-012",
     "prompt": "продуктовый магазин",
     "promptLang": "ru",
-    "options": ["das Lebensmittelgeschäft", "die Bäckerei", "die Apotheke", "das Kaufhaus"],
+    "options": ["das Lebens\u00admittel\u00adgeschäft", "die Bäckerei", "die Apotheke", "das Kaufhaus"],
     "optionsLang": "de",
     "correctIndex": 0
   },
@@ -470,13 +470,13 @@
   },
   {
     "id": "pl-011",
-    "prompt": "die Geschwindigkeitsbegrenzung → die ___",
+    "prompt": "die Geschwindig\u00adkeits\u00adbegrenzung → die ___",
     "promptLang": "de",
     "options": [
-      "Geschwindigkeitsbegrenzungen",
-      "Geschwindigkeitsbegrenzunge",
-      "Geschwindigkeitsbegrenzungs",
-      "Geschwindigkeitsbegrenzung"
+      "Geschwindig\u00adkeits\u00adbegrenzungen",
+      "Geschwindig\u00adkeits\u00adbegrenzunge",
+      "Geschwindig\u00adkeits\u00adbegrenzungs",
+      "Geschwindig\u00adkeits\u00adbegrenzung"
     ],
     "optionsLang": "de",
     "correctIndex": 0

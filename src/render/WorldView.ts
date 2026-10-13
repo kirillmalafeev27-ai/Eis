@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import type { ArtFactory } from '../art/ArtFactory';
 import { K } from '../art/manifest';
 import { balance } from '../config/balance';
+import { hex, palette } from '../config/palette';
 import type { HintMode } from '../config/levels';
 import type { GameEvent } from '../core/events';
 import { aOf, isFloe, lOf } from '../core/grid';
@@ -18,6 +19,7 @@ import { type WorldLayers, artImage, cellHash, createLayers, destroyLayers } fro
 import { type Light, lightFor } from './light';
 import type { Orientation } from './orientation';
 import { SunAndGrade } from './SunAndGrade';
+import { mix } from '../shared/paperKit';
 import { WaterView } from './WaterView';
 
 export type SoundName =
@@ -95,6 +97,8 @@ export class WorldView {
   attract = false;
   /** Сила ледохода для заставки и теста контраста; null — по времени раунда. */
   forcedStrength: number | null = null;
+  /** Застывший кадр (тест контраста): вода, льдины, герой и рыбы не двигаются. */
+  still = false;
 
   constructor(
     private readonly scene: Phaser.Scene,
@@ -396,13 +400,23 @@ export class WorldView {
     const o = this.orient;
     if (!o) return null;
     const s = this.state;
+    // Клетка нужного вида ближе всего к центру поля: там виньетка почти не темнит.
+    const ca = (s.grid.height - 1) / 2;
+    const cl = (s.grid.length - 1) / 2;
     const find = (kind: string, avoid: number[]) => {
-      for (let a = 2; a < s.grid.height - 1; a++)
-        for (let l = 1; l < s.grid.length - 1; l++) {
+      let best = -1;
+      let bestD = Infinity;
+      for (let a = 1; a < s.grid.height - 1; a++)
+        for (let l = 0; l < s.grid.length; l++) {
           const c = a * s.grid.length + l;
-          if (s.grid.cells[c] === kind && !avoid.includes(c)) return c;
+          if (s.grid.cells[c] !== kind || avoid.includes(c)) continue;
+          const d = (a - ca) ** 2 + (l - cl) ** 2;
+          if (d < bestD) {
+            bestD = d;
+            best = c;
+          }
         }
-      return -1;
+      return best;
     };
     const fishCells = s.fish.map((f) => f.cell);
     const water = find('water', []);
@@ -444,7 +458,7 @@ export class WorldView {
     const strength = this.forcedStrength ?? (this.attract ? 0.45 : meltStrengthOf(s));
     this.light = lightFor(strength, balance.layout.cellPx);
     const fx = this.juice.update(dtMs);
-    const frozen = this.juice.frozen;
+    const frozen = this.juice.frozen || this.still;
     const rm = this.opts.reducedMotion;
     this.water.update(frozen ? 0 : dtMs, strength, rm);
     this.floes.update(dtMs, s, this.light, rm, frozen);
@@ -547,9 +561,12 @@ export class WorldView {
   private buildGlints(): void {
     const n = this.opts.lowQuality ? balance.light.glintCountLow : balance.light.glintCount;
     for (let i = 0; i < n; i++) {
-      const water = i % 3 === 0;
+      // половина — блики на воде (золотой час), половина — искры на снегу и толстом льду
+      const water = i % 2 === 0;
       const img = artImage(this.scene, this.art, water ? K.streak : K.glint);
-      img.setBlendMode(Phaser.BlendModes.ADD);
+      // Искры на снегу светятся (сложение); золотые блики на синей воде при сложении
+      // выгорели бы в белое, поэтому они лежат обычной полупрозрачной полоской.
+      img.setBlendMode(water ? Phaser.BlendModes.NORMAL : Phaser.BlendModes.ADD);
       img.setAlpha(0);
       this.layers.atmosphere.add(img);
       this.glints.push({
@@ -568,13 +585,15 @@ export class WorldView {
     const s = this.state;
     const thick: number[] = [];
     const banks: number[] = [];
+    const water: number[] = [];
     s.grid.cells.forEach((k, c) => {
       if (k === 'thick') thick.push(c);
       else if (k === 'near' || k === 'far') banks.push(c);
+      else if (k === 'water') water.push(c);
     });
     this.glints.forEach((g, i) => {
       if (g.water) {
-        g.cell = Math.floor(cellHash(s.seed, i, 91) * s.grid.cells.length);
+        g.cell = water.length ? water[Math.floor(cellHash(s.seed, i, 91) * water.length)] : -1;
       } else {
         const pool = i % 2 && thick.length ? thick : banks;
         g.cell = pool[Math.floor(cellHash(s.seed, i, 93) * pool.length)] ?? 0;
@@ -592,10 +611,13 @@ export class WorldView {
     const snowK = 1 - Math.min(1, strength / 0.6) * 0.6;
     const waterK = Math.max(0, 1 - Math.abs(strength - 0.5) / 0.35);
     const calm = this.opts.reducedMotion;
+    // Блики на воде к золотому часу теплеют (тёплый свет — только окно и блики, 8.3).
+    const waterTint = hex(mix(palette.sunGlint, palette.windowLight, 0.8 * waterK));
+    const along = o.orient === 'portrait' ? 0 : Math.PI / 2;
     for (const g of this.glints) {
       if (g.cell < 0) continue;
       const kind = this.state.grid.cells[g.cell];
-      if (!g.water && kind === 'water') {
+      if ((!g.water && kind === 'water') || (g.water && kind !== 'water')) {
         g.img.setAlpha(0);
         continue;
       }
@@ -603,10 +625,21 @@ export class WorldView {
         this.floes.surfaceAt(g.cell) ?? o.toWorld(aOf(this.state.grid, g.cell), lOf(this.state.grid, g.cell));
       const t = this.time / 1000;
       const tw = calm ? 0.5 : Math.max(0, Math.sin(t * g.speed * 2.2 + g.phase));
-      const a = Math.pow(tw, 6) * (g.water ? waterK * 0.85 : snowK);
-      g.img.setPosition(base.x + g.dx + (g.water ? Math.sin(t * 0.7 + g.phase) * 20 : 0), base.y + g.dy);
-      g.img.setAlpha(a);
-      g.img.setScale((g.water ? 0.9 : 0.35 + 0.35 * tw) / this.art.s);
+      if (g.water) {
+        // Вода не мигает искрами, а переливается: блик то ярче, то тусклее, но держится.
+        const a = (0.55 + 0.45 * tw * tw) * waterK * 0.9;
+        const drift = Math.sin(t * 0.7 + g.phase) * 20;
+        const portrait = o.orient === 'portrait';
+        g.img.setPosition(base.x + g.dx + (portrait ? drift : 0), base.y + g.dy + (portrait ? 0 : drift));
+        g.img.setAlpha(a);
+        g.img.setTint(waterTint);
+        g.img.setRotation(along);
+        g.img.setScale((1.3 + 0.4 * tw) / this.art.s);
+        continue;
+      }
+      g.img.setPosition(base.x + g.dx, base.y + g.dy);
+      g.img.setAlpha(Math.pow(tw, 6) * snowK);
+      g.img.setScale((0.35 + 0.35 * tw) / this.art.s);
     }
   }
 

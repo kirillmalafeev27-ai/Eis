@@ -1052,6 +1052,37 @@
   }
 }
 
+/* Невысокий экран (360×640): меню без второстепенного текста, плотнее. */
+@media (max-height: 700px) {
+  .menu-hint {
+    display: none;
+  }
+
+  .menu-hello {
+    font-size: 15px;
+  }
+
+  .menu-card,
+  .levels {
+    gap: 10px;
+    padding: 18px 18px 12px;
+  }
+
+  .menu-buttons {
+    gap: 8px;
+  }
+
+  .menu-buttons .paper-btn-big {
+    min-height: 50px;
+    padding: 8px 28px;
+    font-size: 20px;
+  }
+
+  .level-card {
+    min-height: 62px;
+  }
+}
+
 /* ───────────────────────── уровни ───────────────────────── */
 
 .levels-title {
@@ -1063,7 +1094,7 @@
 
 .levels-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(64px, 1fr));
   gap: 10px;
 }
 
@@ -1591,6 +1622,55 @@
   }
 }
 
+/* Узкий экран: снимок и корзина рядом, карточка со счётом и кнопками — под ними,
+   чтобы «Ещё раз» и «Дальше» были видны без прокрутки. */
+@media (max-width: 520px) {
+  .res-cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: center;
+    width: 100%;
+  }
+
+  .res-photo,
+  .res-basket {
+    width: auto;
+    padding: 10px 10px 8px;
+  }
+
+  .res-caption {
+    font-size: 13px;
+  }
+
+  .res-basket h3 {
+    font-size: 18px;
+    margin-bottom: 6px;
+  }
+
+  .res-fish-count {
+    font-size: 14px;
+    margin-top: 6px;
+  }
+
+  .res-stats {
+    grid-column: 1 / -1;
+    width: auto;
+  }
+
+  .res-stats h2 {
+    font-size: 20px;
+    margin-bottom: 4px;
+  }
+
+  .res-stars {
+    font-size: 32px;
+  }
+
+  .res-table {
+    gap: 2px 10px;
+  }
+}
+
 /* ───────────────────────── полёт рыбы, отладка ───────────────────────── */
 
 .fish-flight {
@@ -1650,5 +1730,12 @@
   }
   .res-card {
     transition: opacity 120ms;
+  }
+}
+
+/* Большой экран: итоги крупнее, чтобы карточки не терялись. */
+@media (min-width: 1600px) and (min-height: 900px) {
+  .res-cards {
+    zoom: 1.3;
   }
 }

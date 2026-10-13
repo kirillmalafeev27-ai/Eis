@@ -90,6 +90,10 @@ export function createLayout(container: HTMLElement, theme: Theme, cfg: LayoutCo
     if (W < 2 || H < 2) return;
     const landscape = W / H >= cfg.landscapeRatio;
     const gap = cfg.gap;
+    // Сколько места реально у панелей: без внутренних отступов рамки (просветы, safe-area).
+    const cs = getComputedStyle(frame);
+    const innerW = W - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    const innerH = H - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
     let q: number;
     if (landscape) {
       q = Math.max(
@@ -98,16 +102,16 @@ export function createLayout(container: HTMLElement, theme: Theme, cfg: LayoutCo
       );
       if (needs) {
         const need = needs.landscape.w * needs.minCell + needs.inset * 2;
-        const avail = W - q - gap;
-        if (avail < need) q = Math.max(cfg.questionFloor, W - gap - need);
+        const avail = innerW - q - gap;
+        if (avail < need) q = Math.max(cfg.questionFloor, innerW - gap - need);
       }
       q = Math.min(q, W * 0.5);
     } else {
       q = Math.max(cfg.portraitQuestionMin, Math.min(cfg.portraitQuestionMax, H * cfg.portraitQuestionShare));
       if (needs) {
         const need = needs.portrait.h * needs.minCell + needs.inset * 2;
-        const avail = H - q - gap;
-        if (avail < need) q = Math.max(cfg.questionFloor, H - gap - need);
+        const avail = innerH - q - gap;
+        if (avail < need) q = Math.max(cfg.questionFloor, innerH - gap - need);
       }
       q = Math.min(q, H * 0.55);
     }

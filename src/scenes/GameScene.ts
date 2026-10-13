@@ -19,6 +19,9 @@ export interface SceneHost {
  * двигает хозяин из update(), ввод уходит хозяину. Слой 6 рисует вторая камера
  * с теми же прокруткой и зумом, но без цветовой обработки (7.6).
  */
+
+/** Сколько поля за дальним берегом (в клетках) оставить в кадре на самом маленьком экране. */
+const FAR_MIN = 0.4;
 export class GameScene extends Phaser.Scene {
   private host: SceneHost | null = null;
   private art!: ArtFactory;
@@ -137,17 +140,23 @@ export class GameScene extends Phaser.Scene {
       const portrait = o.orient === 'portrait';
       const g = o.gridSize;
       const m = o.margins;
-      const spanAcross = portrait ? g.h + m.far * c : g.w + m.far * c;
       const spanFlow = portrait ? b.w : b.h;
       const availAcross = (portrait ? H : W) - reserve;
       const availFlow = portrait ? W : H;
-      const z = Math.min(availAcross / spanAcross, availFlow / spanFlow);
-      const nearNeeded = reserve / z;
-      if (z * c >= this.minCellCss * this.dpr && nearNeeded >= m.near * c) {
+      // Плашка не ложится на лёд (11.3). Если с полным полем за дальним берегом клетка
+      // выходит меньше минимальной, жертвуем этим полем (избушка срезается краем),
+      // но сам дальний берег остаётся в кадре.
+      for (const far of [m.far, (m.far + FAR_MIN) / 2, FAR_MIN]) {
+        const spanAcross = (portrait ? g.h : g.w) + far * c;
+        const z = Math.min(availAcross / spanAcross, availFlow / spanFlow);
+        const nearNeeded = reserve / z;
+        if (nearNeeded < m.near * c) break;
+        if (z * c < this.minCellCss * this.dpr) continue;
         zoom = z;
         view = portrait
-          ? { x: b.x, y: -m.far * c, w: b.w, h: spanAcross + nearNeeded }
+          ? { x: b.x, y: -far * c, w: b.w, h: spanAcross + nearNeeded }
           : { x: -nearNeeded, y: b.y, w: spanAcross + nearNeeded, h: b.h };
+        break;
       }
     }
     this.base = { zoom, cx: view.x + view.w / 2, cy: view.y + view.h / 2 };

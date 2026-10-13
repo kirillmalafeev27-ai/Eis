@@ -23,6 +23,7 @@ import { type KeyValueStorage, localStorageWithPrefix } from '../shared/storage'
 import { paperTheme } from '../shared/themes/paper';
 import { BasketWidget } from '../ui/BasketWidget';
 import { DebugPanel } from '../ui/DebugPanel';
+import { setGradeOverride } from '../render/SunAndGrade';
 import { flyFish } from '../ui/FishFlight';
 import { JumpHeader } from '../ui/JumpHeader';
 import { IntroCaption } from '../ui/screens/IntroCaption';
@@ -62,6 +63,9 @@ export interface IceOptions {
   onFinish?: (r: FinishResult) => void;
 }
 
+
+/** Типичный размер плашки с корзиной (CSS px): высота в портрете, ширина в ландшафте. */
+const HUD_FALLBACK = { h: 62, w: 150 };
 type Phase = 'boot' | 'menu' | 'levels' | 'intro' | 'play' | 'finale' | 'results' | 'contrast';
 type TutorialKey = 'start' | 'thin' | 'wet' | 'fall';
 
@@ -339,7 +343,7 @@ export class App implements SceneHost {
     this.autoPaused = false;
     this.shownFish = 0;
     this.snapshot = null;
-    this.layout.setWorldNeeds(this.worldNeeds());
+    this.layout.setWorldNeeds(this.worldNeeds(true));
     this.scene?.showRound(round, this.makeOrientation(), this.worldOptions(level.hints));
     this.updateReserve();
     // Интро (11.5.3): камера проходит от берега к берегу, подпись, всё стоит.
@@ -374,13 +378,30 @@ export class App implements SceneHost {
     return this.phase === 'play' && !this.tutorialOpen;
   }
 
-  private worldNeeds() {
+  /**
+   * Сколько клеток нужно миру при минимальной клетке (11.1.5). В раунде плашка с корзиной
+   * лежит над ближним берегом (11.3), поэтому поле ближнего берега — не меньше плашки:
+   * иначе на маленьком экране она легла бы на лёд.
+   */
+  private worldNeeds(withHud = false) {
     const level = levelById(this.levelId);
     const m = this.margins();
+    const min = balance.layout.minCellCss;
+    const current = this.layout.info().orientation;
+    const hudNear = (orient: 'portrait' | 'landscape') => {
+      if (!withHud) return m.near;
+      // Плашка сейчас сложена под текущую ориентацию; для другой — типичный размер.
+      const r = orient === current ? this.basket.el.getBoundingClientRect() : null;
+      const size = orient === 'portrait' ? r?.height || HUD_FALLBACK.h : r?.width || HUD_FALLBACK.w;
+      return Math.max(m.near, (size + 8) / min);
+    };
     return {
-      portrait: Orientation.cellsNeeded('portrait', level.rows + 2, level.length, m),
-      landscape: Orientation.cellsNeeded('landscape', level.rows + 2, level.length, m),
-      minCell: balance.layout.minCellCss,
+      portrait: Orientation.cellsNeeded('portrait', level.rows + 2, level.length, { ...m, near: hudNear('portrait') }),
+      landscape: Orientation.cellsNeeded('landscape', level.rows + 2, level.length, {
+        ...m,
+        near: hudNear('landscape'),
+      }),
+      minCell: min,
       inset: 7,
     };
   }
@@ -939,7 +960,11 @@ export class App implements SceneHost {
       return (l % 3 === 0 ? 'water' : l % 3 === 1 ? 'thin' : 'thick') as typeof k;
     });
     const grid = { ...gen.grid, cells };
-    const fishCell = index(grid, 2, 4);
+    // Рыба — на тонкой льдине ближе к центру кадра, где виньетка почти не темнит.
+    const midA = Math.floor((grid.height - 1) / 2);
+    let fishL = 1;
+    for (let l = 1; l < grid.length; l += 3) if (Math.abs(l - (grid.length - 1) / 2) < Math.abs(fishL - (grid.length - 1) / 2)) fishL = l;
+    const fishCell = index(grid, midA, fishL);
     const s = createState(
       level,
       { grid, bridge: gen.bridge, fish: [fishCell] },
@@ -950,7 +975,10 @@ export class App implements SceneHost {
     this.layout.setWorldNeeds(this.worldNeeds());
     this.scene.showAttract(s, this.makeOrientation(), { ...this.worldOptions('none'), reducedMotion: true });
     const w = this.scene.world;
-    if (w) w.forcedStrength = strength;
+    if (w) {
+      w.forcedStrength = strength;
+      w.still = true;
+    }
     this.updateReserve();
   }
 
@@ -1025,6 +1053,7 @@ export class App implements SceneHost {
       sample: (pts: { x: number; y: number }[], r: number) =>
         this.scene?.sampleLuminance(pts, r) ?? Promise.resolve([]),
       contrastPoints: () => this.scene?.world?.contrastPoints() ?? null,
+      grade: (m: number[] | null) => setGradeOverride(m),
       // Отладка (13.7): только dev-сборка и тесты.
       ageFloe: (k: number) =>
         this.debugMutate((s) => {
