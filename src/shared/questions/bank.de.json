@@ -1,0 +1,768 @@
+[
+ {
+  "id": "art-001",
+  "prompt": "___ Tisch",
+  "promptLang": "de",
+  "options": [
+   "der",
+   "die",
+   "das"
+  ],
+  "optionsLang": "de",
+  "correctIndex": 0
+ },
+ {
+  "id": "art-002",
+  "prompt": "___ Lampe",
+  "promptLang": "de",
+  "options": [
+   "die",
+   "der",
+   "das"
+  ],
+  "optionsLang": "de",
+  "correctIndex": 0
+ },
+ {
+  "id": "art-003",
+  "prompt": "___ Fenster",
+  "promptLang": "de",
+  "options": [
+   "das",
+   "der",
+   "die"
+  ],
+  "optionsLang": "de",
+  "correctIndex": 0
+ },
+ {
+  "id": "art-004",
+  "prompt": "___ Fluss",
+  "promptLang": "de",
+  "options": [
+   "der",
+   "die",
+   "das"
+  ],
+  "optionsLang": "de",
+  "correctIndex": 0
+ },
+ {
+  "id": "art-005",
+  "prompt": "___ Brücke",
+  "promptLang": "de",
+  "options": [
+   "die",
+   "der",
+   "das"
+  ],
+  "optionsLang": "de",
+  "correctIndex": 0
+ },
+ {
+  "id": "art-006",
+  "prompt": "___ Eis",
+  "promptLang": "de",
+  "options": [
+   "das",
+   "der",
+   "die"
+  ],
+  "optionsLang": "de",
+  "correctIndex": 0
+ },
+ {
+  "id": "art-007",
+  "prompt": "___ Fisch",
+  "promptLang": "de",
+  "options": [
+   "der",
+   "die",
+   "das"
+  ],
+  "optionsLang": "de",
+  "correctIndex": 0
+ },
+ {
+  "id": "art-008",
+  "prompt": "___ Hütte",
+  "promptLang": "de",
+  "options": [
+   "die",
+   "der",
+   "das"
+  ],
+  "optionsLang": "de",
+  "correctIndex": 0
+ },
+ {
+  "id": "art-009",
+  "prompt": "___ Boot",
+  "promptLang": "de",
+  "options": [
+   "das",
+   "der",
+   "die"
+  ],
+  "optionsLang": "de",
+  "correctIndex": 0
+ },
+ {
+  "id": "art-010",
+  "prompt": "___ Schnee",
+  "promptLang": "de",
+  "options": [
+   "der",
+   "die",
+   "das"
+  ],
+  "optionsLang": "de",
+  "correctIndex": 0
+ },
+ {
+  "id": "art-011",
+  "prompt": "___ Mütze",
+  "promptLang": "de",
+  "options": [
+   "die",
+   "der"
+  ],
+  "optionsLang": "de",
+  "correctIndex": 0
+ },
+ {
+  "id": "art-012",
+  "prompt": "___ Wasser",
+  "promptLang": "de",
+  "options": [
+   "das",
+   "die"
+  ],
+  "optionsLang": "de",
+  "correctIndex": 0
+ },
+ {
+  "id": "tr-001",
+  "prompt": "окно",
+  "promptLang": "ru",
+  "options": [
+   "das Fenster",
+   "die Tür",
+   "der Boden",
+   "die Wand"
+  ],
+  "optionsLang": "de",
+  "correctIndex": 0
+ },
+ {
+  "id": "tr-002",
+  "prompt": "река",
+  "promptLang": "ru",
+  "options": [
+   "der Fluss",
+   "der See",
+   "das Meer",
+   "die Brücke"
+  ],
+  "optionsLang": "de",
+  "correctIndex": 0
+ },
+ {
+  "id": "tr-003",
+  "prompt": "лёд",
+  "promptLang": "ru",
+  "options": [
+   "das Eis",
+   "der Schnee",
+   "das Wasser",
+   "der Regen"
+  ],
+  "optionsLang": "de",
+  "correctIndex": 0
+ },
+ {
+  "id": "tr-004",
+  "prompt": "рыба",
+  "promptLang": "ru",
+  "options": [
+   "der Fisch",
+   "der Vogel",
+   "der Hund",
+   "die Katze"
+  ],
+  "optionsLang": "de",
+  "correctIndex": 0
+ },
+ {
+  "id": "tr-005",
+  "prompt": "берег реки",
+  "promptLang": "ru",
+  "options": [
+   "das Ufer",
+   "die Brücke",
+   "der Wald",
+   "das Dorf"
+  ],
+  "optionsLang": "de",
+  "correctIndex": 0
+ },
+ {
+  "id": "tr-006",
+  "prompt": "снег",
+  "promptLang": "ru",
+  "options": [
+   "der Schnee",
+   "der Regen",
+   "der Wind",
+   "das Eis"
+  ],
+  "optionsLang": "de",
+  "correctIndex": 0
+ },
+ {
+  "id": "tr-007",
+  "prompt": "шапка",
+  "promptLang": "ru",
+  "options": [
+   "die Mütze",
+   "der Schal",
+   "der Handschuh",
+   "der Stiefel"
+  ],
+  "optionsLang": "de",
+  "correctIndex": 0
+ },
+ {
+  "id": "tr-008",
+  "prompt": "шарф",
+  "promptLang": "ru",
+  "options": [
+   "der Schal",
+   "die Mütze",
+   "der Mantel",
+   "die Jacke"
+  ],
+  "optionsLang": "de",
+  "correctIndex": 0
+ },
+ {
+  "id": "tr-009",
+  "prompt": "корзина",
+  "promptLang": "ru",
+  "options": [
+   "der Korb",
+   "die Tasche",
+   "der Kasten",
+   "die Kiste"
+  ],
+  "optionsLang": "de",
+  "correctIndex": 0
+ },
+ {
+  "id": "tr-010",
+  "prompt": "весна",
+  "promptLang": "ru",
+  "options": [
+   "der Frühling",
+   "der Sommer",
+   "der Herbst",
+   "der Winter"
+  ],
+  "optionsLang": "de",
+  "correctIndex": 0
+ },
+ {
+  "id": "tr-011",
+  "prompt": "ограничение скорости",
+  "promptLang": "ru",
+  "options": [
+   "die Geschwindigkeitsbegrenzung",
+   "die Umleitung",
+   "der Fußgängerüberweg",
+   "die Autobahnauffahrt"
+  ],
+  "optionsLang": "de",
+  "correctIndex": 0
+ },
+ {
+  "id": "tr-012",
+  "prompt": "продуктовый магазин",
+  "promptLang": "ru",
+  "options": [
+   "das Lebensmittelgeschäft",
+   "die Bäckerei",
+   "die Apotheke",
+   "das Kaufhaus"
+  ],
+  "optionsLang": "de",
+  "correctIndex": 0
+ },
+ {
+  "id": "verb-001",
+  "prompt": "du ___ (fahren)",
+  "promptLang": "de",
+  "options": [
+   "fährst",
+   "fahrst",
+   "fährt",
+   "fahren"
+  ],
+  "optionsLang": "de",
+  "correctIndex": 0
+ },
+ {
+  "id": "verb-002",
+  "prompt": "er ___ (laufen)",
+  "promptLang": "de",
+  "options": [
+   "läuft",
+   "lauft",
+   "läufst",
+   "laufen"
+  ],
+  "optionsLang": "de",
+  "correctIndex": 0
+ },
+ {
+  "id": "verb-003",
+  "prompt": "ich ___ (springen)",
+  "promptLang": "de",
+  "options": [
+   "springe",
+   "springst",
+   "springt",
+   "springen"
+  ],
+  "optionsLang": "de",
+  "correctIndex": 0
+ },
+ {
+  "id": "verb-004",
+  "prompt": "wir ___ (schwimmen)",
+  "promptLang": "de",
+  "options": [
+   "schwimmen",
+   "schwimmt",
+   "schwimme",
+   "schwimmst"
+  ],
+  "optionsLang": "de",
+  "correctIndex": 0
+ },
+ {
+  "id": "verb-005",
+  "prompt": "er ___ (sehen)",
+  "promptLang": "de",
+  "options": [
+   "sieht",
+   "seht",
+   "siehst",
+   "sehen"
+  ],
+  "optionsLang": "de",
+  "correctIndex": 0
+ },
+ {
+  "id": "verb-006",
+  "prompt": "du ___ (essen)",
+  "promptLang": "de",
+  "options": [
+   "isst",
+   "esst",
+   "ist",
+   "essen"
+  ],
+  "optionsLang": "de",
+  "correctIndex": 0
+ },
+ {
+  "id": "verb-007",
+  "prompt": "ihr ___ (kommen)",
+  "promptLang": "de",
+  "options": [
+   "kommt",
+   "kommen",
+   "kommst",
+   "komme"
+  ],
+  "optionsLang": "de",
+  "correctIndex": 0
+ },
+ {
+  "id": "verb-008",
+  "prompt": "ich ___ (haben)",
+  "promptLang": "de",
+  "options": [
+   "habe",
+   "hast",
+   "hat",
+   "haben"
+  ],
+  "optionsLang": "de",
+  "correctIndex": 0
+ },
+ {
+  "id": "verb-009",
+  "prompt": "du ___ (sein)",
+  "promptLang": "de",
+  "options": [
+   "bist",
+   "ist",
+   "bin",
+   "seid"
+  ],
+  "optionsLang": "de",
+  "correctIndex": 0
+ },
+ {
+  "id": "verb-010",
+  "prompt": "er ___ (nehmen)",
+  "promptLang": "de",
+  "options": [
+   "nimmt",
+   "nehmt",
+   "nimmst",
+   "nehmen"
+  ],
+  "optionsLang": "de",
+  "correctIndex": 0
+ },
+ {
+  "id": "verb-011",
+  "prompt": "es ___ (schneien)",
+  "promptLang": "de",
+  "options": [
+   "schneit",
+   "schneien",
+   "schneie",
+   "schneist"
+  ],
+  "optionsLang": "de",
+  "correctIndex": 0
+ },
+ {
+  "id": "verb-012",
+  "prompt": "du ___ (helfen)",
+  "promptLang": "de",
+  "options": [
+   "hilfst",
+   "helfst",
+   "hilft",
+   "helft"
+  ],
+  "optionsLang": "de",
+  "correctIndex": 0
+ },
+ {
+  "id": "prep-001",
+  "prompt": "mit ___ Freund",
+  "promptLang": "de",
+  "options": [
+   "dem",
+   "den",
+   "der",
+   "des"
+  ],
+  "optionsLang": "de",
+  "correctIndex": 0
+ },
+ {
+  "id": "prep-002",
+  "prompt": "für ___ Mutter",
+  "promptLang": "de",
+  "options": [
+   "die",
+   "der",
+   "dem",
+   "den"
+  ],
+  "optionsLang": "de",
+  "correctIndex": 0
+ },
+ {
+  "id": "prep-003",
+  "prompt": "ohne ___ Hund",
+  "promptLang": "de",
+  "options": [
+   "den",
+   "dem",
+   "der",
+   "des"
+  ],
+  "optionsLang": "de",
+  "correctIndex": 0
+ },
+ {
+  "id": "prep-004",
+  "prompt": "aus ___ Haus",
+  "promptLang": "de",
+  "options": [
+   "dem",
+   "das",
+   "den",
+   "des"
+  ],
+  "optionsLang": "de",
+  "correctIndex": 0
+ },
+ {
+  "id": "prep-005",
+  "prompt": "bei ___ Oma",
+  "promptLang": "de",
+  "options": [
+   "der",
+   "die",
+   "dem",
+   "den"
+  ],
+  "optionsLang": "de",
+  "correctIndex": 0
+ },
+ {
+  "id": "prep-006",
+  "prompt": "durch ___ Wald",
+  "promptLang": "de",
+  "options": [
+   "den",
+   "dem",
+   "der",
+   "des"
+  ],
+  "optionsLang": "de",
+  "correctIndex": 0
+ },
+ {
+  "id": "prep-007",
+  "prompt": "nach ___ Schule",
+  "promptLang": "de",
+  "options": [
+   "der",
+   "die",
+   "den",
+   "dem"
+  ],
+  "optionsLang": "de",
+  "correctIndex": 0
+ },
+ {
+  "id": "prep-008",
+  "prompt": "von ___ Brücke",
+  "promptLang": "de",
+  "options": [
+   "der",
+   "die",
+   "dem",
+   "den"
+  ],
+  "optionsLang": "de",
+  "correctIndex": 0
+ },
+ {
+  "id": "prep-009",
+  "prompt": "gegen ___ Wind",
+  "promptLang": "de",
+  "options": [
+   "den",
+   "dem",
+   "der",
+   "des"
+  ],
+  "optionsLang": "de",
+  "correctIndex": 0
+ },
+ {
+  "id": "prep-010",
+  "prompt": "seit ___ Winter",
+  "promptLang": "de",
+  "options": [
+   "dem",
+   "den",
+   "der",
+   "des"
+  ],
+  "optionsLang": "de",
+  "correctIndex": 0
+ },
+ {
+  "id": "prep-011",
+  "prompt": "um ___ Tisch",
+  "promptLang": "de",
+  "options": [
+   "den",
+   "dem",
+   "der",
+   "des"
+  ],
+  "optionsLang": "de",
+  "correctIndex": 0
+ },
+ {
+  "id": "prep-012",
+  "prompt": "mit ___ Kind",
+  "promptLang": "de",
+  "options": [
+   "dem",
+   "das",
+   "den",
+   "der"
+  ],
+  "optionsLang": "de",
+  "correctIndex": 0
+ },
+ {
+  "id": "pl-001",
+  "prompt": "das Kind → die ___",
+  "promptLang": "de",
+  "options": [
+   "Kinder",
+   "Kinde",
+   "Kinds",
+   "Kindern"
+  ],
+  "optionsLang": "de",
+  "correctIndex": 0
+ },
+ {
+  "id": "pl-002",
+  "prompt": "der Fisch → die ___",
+  "promptLang": "de",
+  "options": [
+   "Fische",
+   "Fischen",
+   "Fischer",
+   "Fischs"
+  ],
+  "optionsLang": "de",
+  "correctIndex": 0
+ },
+ {
+  "id": "pl-003",
+  "prompt": "die Brücke → die ___",
+  "promptLang": "de",
+  "options": [
+   "Brücken",
+   "Brücke",
+   "Brückes",
+   "Brücker"
+  ],
+  "optionsLang": "de",
+  "correctIndex": 0
+ },
+ {
+  "id": "pl-004",
+  "prompt": "das Haus → die ___",
+  "promptLang": "de",
+  "options": [
+   "Häuser",
+   "Hause",
+   "Hausen",
+   "Häuse"
+  ],
+  "optionsLang": "de",
+  "correctIndex": 0
+ },
+ {
+  "id": "pl-005",
+  "prompt": "der Baum → die ___",
+  "promptLang": "de",
+  "options": [
+   "Bäume",
+   "Baume",
+   "Bäumer",
+   "Baumen"
+  ],
+  "optionsLang": "de",
+  "correctIndex": 0
+ },
+ {
+  "id": "pl-006",
+  "prompt": "die Mütze → die ___",
+  "promptLang": "de",
+  "options": [
+   "Mützen",
+   "Mützes",
+   "Mütze",
+   "Mützer"
+  ],
+  "optionsLang": "de",
+  "correctIndex": 0
+ },
+ {
+  "id": "pl-007",
+  "prompt": "der Tag → die ___",
+  "promptLang": "de",
+  "options": [
+   "Tage",
+   "Tagen",
+   "Täge",
+   "Tags"
+  ],
+  "optionsLang": "de",
+  "correctIndex": 0
+ },
+ {
+  "id": "pl-008",
+  "prompt": "der Apfel → die ___",
+  "promptLang": "de",
+  "options": [
+   "Äpfel",
+   "Apfels",
+   "Äpfeln",
+   "Apfeln"
+  ],
+  "optionsLang": "de",
+  "correctIndex": 0
+ },
+ {
+  "id": "pl-009",
+  "prompt": "die Hand → die ___",
+  "promptLang": "de",
+  "options": [
+   "Hände",
+   "Hande",
+   "Händen",
+   "Hands"
+  ],
+  "optionsLang": "de",
+  "correctIndex": 0
+ },
+ {
+  "id": "pl-010",
+  "prompt": "das Buch → die ___",
+  "promptLang": "de",
+  "options": [
+   "Bücher",
+   "Buche",
+   "Büche",
+   "Buchs"
+  ],
+  "optionsLang": "de",
+  "correctIndex": 0
+ },
+ {
+  "id": "pl-011",
+  "prompt": "die Geschwindigkeitsbegrenzung → die ___",
+  "promptLang": "de",
+  "options": [
+   "Geschwindigkeitsbegrenzungen",
+   "Geschwindigkeitsbegrenzunge",
+   "Geschwindigkeitsbegrenzungs",
+   "Geschwindigkeitsbegrenzung"
+  ],
+  "optionsLang": "de",
+  "correctIndex": 0
+ },
+ {
+  "id": "pl-012",
+  "prompt": "die Nacht → die ___",
+  "promptLang": "de",
+  "options": [
+   "Nächte",
+   "Nachte",
+   "Nächten",
+   "Nachts"
+  ],
+  "optionsLang": "de",
+  "correctIndex": 0
+ }
+]
