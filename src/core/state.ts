@@ -83,7 +83,18 @@ export interface GeneratedLevel {
   fish: number[];
 }
 
-export function createState(level: LevelConfig, gen: GeneratedLevel, pace: Pace, seed: number): GameState {
+export interface StateOptions {
+  /** Деления тепла на старте: больше трёх — «тёплый шарф» после неудач (balance.assist). */
+  warmth?: number;
+}
+
+export function createState(
+  level: LevelConfig,
+  gen: GeneratedLevel,
+  pace: Pace,
+  seed: number,
+  opts: StateOptions = {},
+): GameState {
   const n = gen.grid.cells.length;
   const meltStart = balance.rules.meltStartAnswers * pace.tMedMs;
   return {
@@ -100,7 +111,7 @@ export function createState(level: LevelConfig, gen: GeneratedLevel, pace: Pace,
       cell: gen.bridge,
       pips: 0,
       target: null,
-      warmth: balance.rules.warmth,
+      warmth: opts.warmth ?? balance.rules.warmth,
       falls: 0,
       floeStart: null,
       floeDuration: 0,

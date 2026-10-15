@@ -1,18 +1,56 @@
 import { balance } from '../src/config/balance';
 import type { LevelConfig } from '../src/config/levels';
-import { defaultAnswerModel, sampleAnswer } from '../src/core/answerModel';
+import { type AnswerModel, defaultAnswerModel, sampleAnswer } from '../src/core/answerModel';
 import type { GameAction, GameEvent } from '../src/core/events';
 import { generateLevel } from '../src/core/levelGen';
 import type { Pace } from '../src/core/risk';
 import { mixSeed, mulberry32 } from '../src/core/rng';
 import { nextScheduledTime, reduce } from '../src/core/rules';
 import { type GameState, caughtFish, createState, starsFor } from '../src/core/state';
+import { type PaceConfig, PaceTracker } from '../src/shared/pace';
+import { memoryStorage } from '../src/shared/storage';
 import { type BotKind, makeBot } from './bots';
 
 /**
  * Прогон раундов ботами на настоящем движке правил, без графики (раздел 14).
- * Время ответа — логнормальное с медианой T_med и σ = 0.5, верность — p.
+ * Игрок отвечает по своей модели: время логнормальное с медианой T_med и разбросом σ
+ * (по умолчанию 0.5), верность — p. Игра этого не знает: темп раунда ей даёт тот же учёт
+ * темпа, что в игре (shared/pace.ts), по прошлым ответам игрока — с настоящим шумом оценки.
  */
+export interface Player extends Pace {
+  sigma?: number;
+}
+
+export interface SimOptions {
+  /** Учёт темпа: банк (balance.pace) или задания генератора (paceConfigFor). */
+  paceConfig?: PaceConfig;
+  /** Сколько прошлых ответов игрока знает учёт темпа: 0 — первый раунд, по умолчанию 20. */
+  history?: number;
+  /** Деления тепла на старте: больше трёх — «тёплый шарф». */
+  warmth?: number;
+  /** Показ ошибки, мс: у заданий генератора дольше (balance.questions). */
+  wrongShowMs?: number;
+}
+
+/** Учёт темпа для вида вопросов, как в игре (App.paceFor). */
+export function paceConfigFor(mode: 'bank' | 'gen', cefr = 'B1'): PaceConfig {
+  if (mode === 'bank') return balance.pace;
+  const { defaultTmedMsByLevel, ...gen } = balance.paceGenerated;
+  return { ...balance.pace, ...gen, defaultTmedMs: defaultTmedMsByLevel[cefr] ?? gen.defaultTmedMs };
+}
+
+/** Темп, который игра выставит раунду, зная `history` прошлых ответов игрока. */
+export function gamePaceFor(seed: number, player: Player, opts: SimOptions = {}): Pace {
+  const tracker = new PaceTracker(memoryStorage(), opts.paceConfig ?? balance.pace);
+  const rng = mulberry32(mixSeed(seed, 0x9ace));
+  const model = { ...defaultAnswerModel, sigma: player.sigma ?? defaultAnswerModel.sigma };
+  for (let i = 0; i < (opts.history ?? 20); i++) {
+    const a = sampleAnswer(rng, player, model);
+    tracker.record(a.timeMs, a.correct);
+  }
+  const snap = tracker.snapshot();
+  return { tMedMs: snap.tMedMs, p: snap.p };
+}
 export interface RoundResult {
   won: boolean;
   fish: number;
@@ -27,12 +65,24 @@ export interface RoundResult {
 
 const MAX_ROUND_MS = 15 * 60 * 1000;
 
-export function simulateRound(level: LevelConfig, seed: number, pace: Pace, kind: BotKind): RoundResult {
-  const gen = generateLevel(level, seed, pace.tMedMs);
-  let s: GameState = createState(level, gen, pace, seed);
+export function simulateRound(
+  level: LevelConfig,
+  seed: number,
+  player: Player,
+  kind: BotKind,
+  opts: SimOptions = {},
+): RoundResult {
+  const game = gamePaceFor(seed, player, opts);
+  const gen = generateLevel(level, seed, game.tMedMs);
+  let s: GameState = createState(level, gen, game, seed, { warmth: opts.warmth });
   const rng = mulberry32(mixSeed(seed, 0xb07));
   const bot = makeBot(kind);
-  const model = defaultAnswerModel;
+  const model: AnswerModel = {
+    ...defaultAnswerModel,
+    sigma: player.sigma ?? defaultAnswerModel.sigma,
+    wrongShowMs: opts.wrongShowMs ?? defaultAnswerModel.wrongShowMs,
+  };
+  const pace: Pace = { tMedMs: player.tMedMs, p: player.p };
 
   const dispatch = (a: GameAction): GameEvent[] => {
     const r = reduce(s, a);
@@ -100,8 +150,9 @@ export function simulate(
   level: LevelConfig,
   kind: BotKind,
   runs: number,
-  pace: Pace,
+  pace: Player,
   baseSeed = 1,
+  opts: SimOptions = {},
 ): SimReport {
   const stars: [number, number, number, number] = [0, 0, 0, 0];
   let wins = 0;
@@ -116,7 +167,7 @@ export function simulate(
   let time = 0;
   for (let i = 0; i < runs; i++) {
     const seed = mixSeed(baseSeed, i * 7919 + level.id) >>> 0;
-    const r = simulateRound(level, seed, pace, kind);
+    const r = simulateRound(level, seed, pace, kind, opts);
     stars[r.stars]++;
     fish += r.fish;
     if (r.won) {

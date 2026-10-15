@@ -10,8 +10,12 @@ export type RiskLevel = 'safe' | 'risky' | 'fail';
 
 /** Темп игрока, зафиксированный на старте раунда (раздел 3). */
 export interface Pace {
+  /** Темп для правил: медиана ответа с поправкой на разброс (shared/pace.ts). */
   tMedMs: number;
   p: number;
+  /** Для отладки: медиана как есть и оценка разброса σ. */
+  medianMs?: number;
+  sigma?: number;
 }
 
 export interface JumpRisk {

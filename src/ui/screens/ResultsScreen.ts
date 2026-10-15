@@ -25,6 +25,8 @@ export interface ResultsData {
   cause: 'cold' | 'trapped' | null;
   levelLabel: string;
   hasNext: boolean;
+  /** Сколько тепла даст «тёплый шарф» в следующий раз, если он только что заработан. */
+  scarfNext: number;
 }
 
 export class ResultsScreen {
@@ -79,6 +81,7 @@ export class ResultsScreen {
       d.cause
         ? el('p', 'res-cause', {}, [d.cause === 'cold' ? ru.results.causeCold : ru.results.causeTrapped])
         : null,
+      d.scarfNext ? el('p', 'res-scarf', {}, [ru.scarfNext(d.scarfNext)]) : null,
       el(
         'dl',
         'res-table',

@@ -947,6 +947,20 @@
   background: var(--warm-full);
 }
 
+/* «Тёплый шарф» (помощь после неудач): лишние деления связаны полосками цвета шарфа героя. */
+.thermo-mark.is-scarf.is-on {
+  background: repeating-linear-gradient(90deg, var(--scarf) 0 3px, var(--card) 3px 5px);
+}
+
+/* С шарфом делений больше — термометр чуть выше, чтобы деления не стали чёрточками. */
+.thermo[data-marks='4'] {
+  height: 52px;
+}
+
+.thermo[data-marks='5'] {
+  height: 58px;
+}
+
 .thermo-mark.is-lost {
   animation: thermo-lost 650ms ease-out;
 }
@@ -1632,6 +1646,13 @@
   }
 }
 
+.caption-note {
+  max-width: 76%;
+  padding: 9px 16px 8px;
+  font-size: clamp(14px, 2vw, 18px);
+  transform: rotate(1.5deg);
+}
+
 .intro-skip {
   padding: 3px 9px;
   font:
@@ -1905,6 +1926,14 @@
     500 15px/1.35 'Rubik',
     sans-serif;
   color: var(--ink-soft);
+}
+
+.res-scarf {
+  margin: 0 0 8px;
+  font:
+    700 15px/1.35 'Rubik',
+    sans-serif;
+  color: var(--ink);
 }
 
 .res-table {

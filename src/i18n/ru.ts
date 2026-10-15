@@ -41,6 +41,9 @@ export const ru = {
   warmth: 'Тепло',
   fishSlot: (i: number, caught: boolean) => `Рыба ${i + 1}: ${caught ? 'в корзине' : 'нет'}`,
   warmthLeft: (n: number, total: number) => `Тепло: ${n} из ${total}`,
+  /** «Тёплый шарф» (balance.assist): лишнее тепло после неудач подряд. */
+  scarf: (extra: number) => `Тёплый шарф: +${extra} тепло`,
+  scarfNext: (extra: number) => `В следующий раз — тёплый шарф: +${extra} тепло`,
   results: {
     won: 'Переправился!',
     lost: 'Не вышло',
@@ -84,6 +87,7 @@ export const ru = {
     sfxLanguage: 'Слова-звуки',
     sfxDe: 'По-немецки',
     sfxRu: 'По-русски',
+    assist: 'Тёплый шарф после двух неудач подряд',
     close: 'Готово',
   },
   quiz: {

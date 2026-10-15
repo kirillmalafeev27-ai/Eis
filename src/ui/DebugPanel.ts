@@ -51,7 +51,10 @@ export class DebugPanel {
     const avail = heroAvailableMs(s);
     this.out.textContent = [
       `FPS ${fps.toFixed(0)}  сид ${s.seed}`,
-      `T_med ${(s.pace.tMedMs / 1000).toFixed(2)} с  p ${s.pace.p.toFixed(2)}`,
+      `T_эфф ${(s.pace.tMedMs / 1000).toFixed(2)} с  p ${s.pace.p.toFixed(2)}` +
+        (s.pace.medianMs
+          ? `  (медиана ${(s.pace.medianMs / 1000).toFixed(1)} с, σ ${s.pace.sigma?.toFixed(2)})`
+          : ''),
       `сила ${meltStrengthOf(s).toFixed(2)}  до таяния ${((s.melt.nextAt - s.time) / 1000).toFixed(1)} с`,
       `льдина героя: ${Number.isFinite(avail) ? (avail / 1000).toFixed(1) + ' с' : 'берег'}  стадия ${s.hero.crackStage}`,
       `намокают: ${wet.join(' ') || '—'}`,

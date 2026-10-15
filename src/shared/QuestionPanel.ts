@@ -34,6 +34,8 @@ export interface QuestionPanelTiming {
   correctGlowMs: number;
   flipMs: number;
   wrongFeedbackMs: number;
+  /** То же для заданий генератора (с инструкцией): предложение нужно успеть прочитать. */
+  wrongFeedbackGeneratedMs: number;
   fontMaxPx: number;
   fontMinPx: number;
 }
@@ -94,6 +96,7 @@ export class QuestionPanel {
   private current: Question | null = null;
   private upcoming: Promise<Question> | null = null;
   private upcomingReady = false;
+  private upcomingQuestion: Question | null = null;
   private busy = false;
   private activatedAt = 0;
   private stoppedAt = 0;
@@ -179,6 +182,17 @@ export class QuestionPanel {
     return (this.current !== null && !this.busy) || this.upcomingReady;
   }
 
+  /**
+   * Какой вопрос сейчас перед игроком или следующим на очереди: задание генератора (формат
+   * Morskoy, с инструкцией) или вопрос банка. null — ещё не загружен. Темп раунда берётся
+   * по этому виду (shared/pace.ts).
+   */
+  peekKind(): 'generated' | 'bank' | null {
+    const q = this.current ?? this.upcomingQuestion;
+    if (!q) return null;
+    return q.instruction ? 'generated' : 'bank';
+  }
+
   /** Источник сменил темы: заранее загруженный вопрос больше не годится. */
   reload(): void {
     if (this.destroyed) return;
@@ -242,8 +256,11 @@ export class QuestionPanel {
     const next = this.provider.next();
     this.upcoming = next;
     this.upcomingReady = false;
-    void next.then(() => {
-      if (this.upcoming === next) this.upcomingReady = true;
+    this.upcomingQuestion = null;
+    void next.then((q) => {
+      if (this.upcoming !== next) return;
+      this.upcomingReady = true;
+      this.upcomingQuestion = q;
     });
   }
 
@@ -506,7 +523,8 @@ export class QuestionPanel {
       chip.classList.add('is-wrong');
       this.chips[q.correctIndex]?.classList.add('is-right');
       this.el.classList.add('qp-oops');
-      this.later(this.timing.wrongFeedbackMs, () => {
+      const showMs = q.instruction ? this.timing.wrongFeedbackGeneratedMs : this.timing.wrongFeedbackMs;
+      this.later(showMs, () => {
         this.el.classList.remove('qp-oops');
         void this.showNext(false);
       });

@@ -3,7 +3,7 @@ import type { GameAction, GameEvent } from '../core/events';
 import { generateLevel, type LevelGenResult } from '../core/levelGen';
 import type { Pace } from '../core/risk';
 import { clampFrameDt, reduce } from '../core/rules';
-import { type GameState, createState } from '../core/state';
+import { type GameState, type StateOptions, createState } from '../core/state';
 
 export type RoundListener = (events: GameEvent[], state: GameState, prev: GameState) => void;
 
@@ -22,9 +22,10 @@ export class Round {
     readonly level: LevelConfig,
     readonly seed: number,
     readonly pace: Pace,
+    opts: StateOptions = {},
   ) {
     this.gen = generateLevel(level, seed, pace.tMedMs);
-    this.state = createState(level, this.gen, pace, seed);
+    this.state = createState(level, this.gen, pace, seed, opts);
   }
 
   on(cb: RoundListener): () => void {

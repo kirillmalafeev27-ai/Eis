@@ -16,8 +16,8 @@ import { BootScene } from '../scenes/BootScene';
 import { GameScene, type SceneHost } from '../scenes/GameScene';
 import { Mixer } from '../shared/audio/mixer';
 import { type Layout, createLayout } from '../shared/layout';
-import { PaceTracker } from '../shared/pace';
-import { QuestionPanel } from '../shared/QuestionPanel';
+import { PACE_KEY, type PaceConfig, PaceTracker } from '../shared/pace';
+import { type AnswerInfo, QuestionPanel } from '../shared/QuestionPanel';
 import { type ConfigurableQuestionProvider, isConfigurable } from '../shared/questions/AiQuestionProvider';
 import { type Speaker, createSpeaker } from '../shared/questions/speech';
 import type { QuizConfig } from '../shared/questions/topics';
@@ -41,11 +41,13 @@ import { TutorialBubble } from '../ui/screens/TutorialBubble';
 import {
   type Progress,
   type Settings,
+  assistWarmth,
   effectiveHints,
   isBetter,
   loadProgress,
   loadQuiz,
   loadSettings,
+  recordStreak,
   saveProgress,
   saveQuiz,
   saveSettings,
@@ -108,7 +110,12 @@ const SOUND_MAP: Record<SoundName, SfxName[]> = {
 export class App implements SceneHost {
   readonly layout: Layout;
   readonly storage: KeyValueStorage;
-  readonly pace: PaceTracker;
+  /** Темп по видам вопросов: банк — общий ключ серии, генератор — свой на каждый уровень. */
+  private readonly paces = new Map<string, PaceTracker>();
+  /** Генерация на сервере подключена (ответ /api/quiz/status); null — ответа ещё нет. */
+  private generationOn: boolean | null = null;
+  /** Делений тепла в текущем раунде: больше трёх — «тёплый шарф» (balance.assist). */
+  private roundWarmth: number = balance.rules.warmth;
   private readonly game: Phaser.Game;
   private scene: GameScene | null = null;
   private readonly panel: QuestionPanel;
@@ -161,7 +168,6 @@ export class App implements SceneHost {
     this.params = new URLSearchParams(location.search);
     this.test = this.params.has('test');
     this.storage = opts.storage ?? localStorageWithPrefix('ice:');
-    this.pace = new PaceTracker(this.storage, balance.pace);
     this.settings = loadSettings(this.storage);
     this.progress = loadProgress(this.storage);
     this.levelId = opts.level ?? 1;
@@ -180,6 +186,7 @@ export class App implements SceneHost {
       const saved = loadQuiz(this.storage);
       this.quizChosen = saved.chosen || this.quiz.config() !== null;
       if (saved.chosen && this.quiz.config() === null) this.quiz.configure(saved.config);
+      void this.quiz.status().then((st) => (this.generationOn = st.generationConfigured));
     }
 
     this.panel = new QuestionPanel(
@@ -197,10 +204,11 @@ export class App implements SceneHost {
         correctGlowMs: balance.questions.correctGlowMs,
         flipMs: balance.questions.flipMs,
         wrongFeedbackMs: balance.rules.wrongFeedbackMs,
+        wrongFeedbackGeneratedMs: balance.questions.wrongFeedbackGeneratedMs,
         fontMaxPx: balance.questions.fontMaxPx,
         fontMinPx: balance.questions.fontMinPx,
       },
-      (a) => this.onAnswer(a.correct, a.timeMs),
+      (a) => this.onAnswer(a),
     );
     this.panel.onSound = (name) =>
       this.sfx(name === 'correct' ? ['correct', 'click'] : name === 'wrong' ? ['wrong'] : ['flip']);
@@ -423,7 +431,13 @@ export class App implements SceneHost {
     this.levelId = Math.max(1, Math.min(levels.length, levelId));
     const level = levelById(this.levelId);
     this.seed = nextSeed(this.seed);
-    const round = new Round(level, this.seed, this.pace.snapshot());
+    // Темп — по виду вопросов этого раунда (3, shared/pace.ts); тепло — с «шарфом», если
+    // на уровне подряд не везло (balance.assist).
+    const pace = this.paceFor(this.roundKind()).snapshot();
+    const extra = assistWarmth(this.progress.streak[String(this.levelId)] ?? 0, this.settings.assist);
+    this.roundWarmth = balance.rules.warmth + extra;
+    this.basket.setTotal(this.roundWarmth, balance.rules.warmth);
+    const round = new Round(level, this.seed, pace, { warmth: this.roundWarmth });
     if (round.gen.relax > 0 && import.meta.env.DEV) console.warn(...round.gen.warnings);
     this.round = round;
     round.on((events, state) => this.onRoundEvents(events, state));
@@ -440,7 +454,11 @@ export class App implements SceneHost {
     this.updateReserve();
     // Интро (11.5.3): камера проходит от берега к берегу, подпись, всё стоит.
     if (!this.reducedMotion()) this.scene?.playIntro(balance.anim.introMs);
-    this.introCaption = new IntroCaption(this.layout.worldOverlay, () => this.skipIntro());
+    this.introCaption = new IntroCaption(
+      this.layout.worldOverlay,
+      () => this.skipIntro(),
+      extra ? ru.scarf(extra) : undefined,
+    );
     this.mixer.ambientStart();
     this.syncUi();
   }
@@ -594,11 +612,38 @@ export class App implements SceneHost {
     this.maybeTutorial('start');
   }
 
-  private onAnswer(correct: boolean, timeMs: number): void {
+  private onAnswer(a: AnswerInfo): void {
     if (!this.round || this.phase !== 'play') return;
-    this.pace.record(timeMs, correct);
-    this.round.dispatch({ type: 'ANSWER', correct, timeMs });
-    if (correct) this.header.pulse();
+    this.paceFor(a.question.instruction ? 'generated' : 'bank').record(a.timeMs, a.correct);
+    this.round.dispatch({ type: 'ANSWER', correct: a.correct, timeMs: a.timeMs });
+    if (a.correct) this.header.pulse();
+  }
+
+  /** Учёт темпа для вида вопросов: банк или задания генератора текущего уровня A1–C1. */
+  private paceFor(kind: 'bank' | 'generated'): PaceTracker {
+    const level = this.quiz?.config()?.level ?? 'any';
+    const key = kind === 'bank' ? PACE_KEY : `${PACE_KEY}:gen:${level}`;
+    let t = this.paces.get(key);
+    if (!t) {
+      const { defaultTmedMsByLevel, ...gen } = balance.paceGenerated;
+      const cfg: PaceConfig =
+        kind === 'bank'
+          ? balance.pace
+          : { ...balance.pace, ...gen, defaultTmedMs: defaultTmedMsByLevel[level] ?? gen.defaultTmedMs };
+      t = new PaceTracker(this.storage, cfg, key);
+      this.paces.set(key, t);
+    }
+    return t;
+  }
+
+  /**
+   * Вопросы раунда: при выбранных темах — задания генератора, если сервер не ответил, что её нет;
+   * иначе — те, что на очереди. Сомнение — в пользу генератора: его темп щадящий, а темп банка
+   * на предложениях сделал бы раунд непосильным.
+   */
+  private roundKind(): 'bank' | 'generated' {
+    if (this.quiz?.config() && this.generationOn !== false) return 'generated';
+    return this.panel.peekKind() ?? 'bank';
   }
 
   private onRoundEvents(events: GameEvent[], state: GameState): void {
@@ -635,6 +680,9 @@ export class App implements SceneHost {
     const stars = starsFor(won, fish);
     const timeMs = state.endTime ?? state.time;
     const key = String(this.levelId);
+    const scarfBefore = assistWarmth(this.progress.streak[key] ?? 0, this.settings.assist);
+    recordStreak(this.progress, key, won);
+    const scarfAfter = assistWarmth(this.progress.streak[key] ?? 0, this.settings.assist);
     const prev = this.progress.levels[key];
     const better = isBetter(prev, stars, timeMs, won);
     if (better) this.progress.levels[key] = { stars, bestTimeMs: timeMs, won: true };
@@ -661,6 +709,7 @@ export class App implements SceneHost {
       cause: state.cause,
       levelLabel: levelById(this.levelId).label,
       hasNext: this.levelId < levels.length && this.progress.unlocked > this.levelId,
+      scarfNext: !won && scarfAfter > scarfBefore ? scarfAfter : 0,
     };
     this.opts.onFinish?.({
       level: this.levelId,
@@ -1041,7 +1090,7 @@ export class App implements SceneHost {
     this.basket.set(
       this.reducedMotion() ? caught : Math.min(caught, this.shownFish),
       s.hero.warmth,
-      balance.rules.warmth,
+      this.roundWarmth,
     );
     this.basket.setEnabled(this.phase === 'play' && !this.isPaused() && !this.tutorialOpen);
     this.basket.el.classList.toggle('is-ghost', this.basketOverHero());
@@ -1191,6 +1240,7 @@ export class App implements SceneHost {
       settings: () => ({ ...this.settings }),
       showQuestion: (q: Question) => this.panel.debugShow(q),
       panelReady: () => this.panel.isReady(),
+      pace: () => this.round?.state.pace ?? null,
       quiz: () => this.quiz?.config() ?? null,
       openQuiz: () => this.openQuiz(),
       fps: () => this.game.loop.actualFps,

@@ -115,6 +115,7 @@ export class SettingsScreen {
             (v) => (cur.hints = v),
           ),
           levelHints && cap < 2 ? el('p', 'set-note', {}, [t.hintsLimited]) : null,
+          toggle(t.assist, cur.assist, (v) => (cur.assist = v)),
           choice(
             t.sfxLanguage,
             cur.sfxLang,

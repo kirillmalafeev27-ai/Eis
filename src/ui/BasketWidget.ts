@@ -13,6 +13,8 @@ export class BasketWidget {
   readonly standBtn: HTMLButtonElement;
   private fish = -1;
   private warmth = -1;
+  private total = 0;
+  private readonly tube: HTMLElement;
 
   constructor(parent: HTMLElement, totalWarmth: number, onShore: () => void, onStand: () => void) {
     this.el = document.createElement('div');
@@ -40,12 +42,7 @@ export class BasketWidget {
     bulb.className = 'thermo-bulb';
     const tube = document.createElement('div');
     tube.className = 'thermo-tube';
-    for (let i = 0; i < totalWarmth; i++) {
-      const m = document.createElement('div');
-      m.className = 'thermo-mark';
-      tube.appendChild(m);
-      this.marks.push(m);
-    }
+    this.tube = tube;
     thermo.append(tube, bulb);
     const buttons = document.createElement('div');
     buttons.className = 'basket-buttons';
@@ -59,6 +56,26 @@ export class BasketWidget {
     parent.appendChild(this.el);
     this.thermo = thermo;
     this.art = art;
+    this.setTotal(totalWarmth);
+  }
+
+  /**
+   * Сколько делений в термометре. Сверх обычных трёх — «тёплый шарф» (balance.assist): эти
+   * деления связаны полосками цвета шарфа героя.
+   */
+  setTotal(total: number, base = total): void {
+    if (total === this.total) return;
+    this.total = total;
+    this.tube.innerHTML = '';
+    this.marks.length = 0;
+    for (let i = 0; i < total; i++) {
+      const m = document.createElement('div');
+      m.className = i >= base ? 'thermo-mark is-scarf' : 'thermo-mark';
+      this.tube.appendChild(m);
+      this.marks.push(m);
+    }
+    this.thermo.dataset.marks = String(total);
+    this.warmth = -1;
   }
 
   private readonly thermo: HTMLElement;

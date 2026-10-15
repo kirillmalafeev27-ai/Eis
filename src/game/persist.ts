@@ -16,6 +16,8 @@ export interface Settings {
   /** Потолок подсказок игрока; уровень может разрешать меньше. */
   hints: HintMode;
   sfxLang: 'de' | 'ru';
+  /** «Тёплый шарф»: после неудач подряд на уровне — лишнее деление тепла (balance.assist). */
+  assist: boolean;
 }
 
 export interface LevelProgress {
@@ -29,6 +31,8 @@ export interface Progress {
   /** Наибольший открытый уровень. */
   unlocked: number;
   tutorial: Record<string, boolean>;
+  /** Поражений подряд на уровне — для «тёплого шарфа»; победа обнуляет. */
+  streak: Record<string, number>;
 }
 
 const SETTINGS = 'settings';
@@ -54,6 +58,7 @@ export function defaultSettings(): Settings {
     qualityAuto: false,
     hints: 'risk',
     sfxLang: 'de',
+    assist: true,
   };
 }
 
@@ -66,8 +71,27 @@ export function saveSettings(s: KeyValueStorage, v: Settings): void {
 }
 
 export function loadProgress(s: KeyValueStorage): Progress {
-  const p = readJson<Progress>(s, PROGRESS, { levels: {}, unlocked: 1, tutorial: {} });
-  return { levels: p.levels ?? {}, unlocked: Math.max(1, p.unlocked ?? 1), tutorial: p.tutorial ?? {} };
+  const p = readJson<Progress>(s, PROGRESS, { levels: {}, unlocked: 1, tutorial: {}, streak: {} });
+  return {
+    levels: p.levels ?? {},
+    unlocked: Math.max(1, p.unlocked ?? 1),
+    tutorial: p.tutorial ?? {},
+    streak: p.streak ?? {},
+  };
+}
+
+/** Итог раунда для серии поражений: победа обнуляет, поражение добавляет одно. */
+export function recordStreak(p: Progress, levelKey: string, won: boolean): void {
+  p.streak[levelKey] = won ? 0 : (p.streak[levelKey] ?? 0) + 1;
+}
+
+/** Сколько лишних делений тепла даёт «тёплый шарф» при такой серии поражений. */
+export function assistWarmth(lossStreak: number, enabled = true): number {
+  if (!enabled) return 0;
+  const a = balance.assist;
+  if (lossStreak >= a.secondScarfAfterLosses) return 2;
+  if (lossStreak >= a.scarfAfterLosses) return 1;
+  return 0;
 }
 
 export function saveProgress(s: KeyValueStorage, p: Progress): void {

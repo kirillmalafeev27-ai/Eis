@@ -168,6 +168,16 @@ test('выбор тем: «Играть» → темы → уровни → во
   await expect(page.locator('.qp-prompt')).toHaveText(/^(Perfekt|Dativ): Sein Zug/);
   await expect(page.locator('.qp-sheet')).toHaveAttribute('data-layout', 'column');
   await page.waitForTimeout(200); // защита от двойного тапа (2.7.4)
+  // Ошибка в задании генератора: верный вариант виден 1,8 с, а не 1 с — предложение успевают прочитать.
+  const shownMs = await page.evaluate(async () => {
+    const ice = window.__ice;
+    ice.press(((ice.correctIndex() + 1) % 4) + 1);
+    const t0 = performance.now();
+    while (ice.correctIndex() < 0) await new Promise((r) => setTimeout(r, 20));
+    return performance.now() - t0;
+  });
+  expect(shownMs).toBeGreaterThan(1700);
+  await page.waitForTimeout(200);
   const answered = await page.evaluate(() => window.__ice.press(window.__ice.correctIndex() + 1));
   expect(answered).toBe(true);
 
