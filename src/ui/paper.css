@@ -489,6 +489,222 @@
   animation: none;
 }
 
+/* ── задания генератора (формат Morskoy): инструкция, материал, варианты-предложения ── */
+
+.qp-instruction,
+.qp-listen {
+  display: none;
+}
+
+.qp-line {
+  display: block;
+}
+
+.qp-sheet[data-fit='sheet'] {
+  gap: 8px;
+}
+
+.qp-sheet[data-fit='sheet'] .qp-task {
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  min-height: 0;
+  max-height: none;
+  padding: 11px 14px 9px;
+}
+
+.qp-sheet[data-fit='sheet'] .qp-instruction:not([hidden]) {
+  display: block;
+  font:
+    500 13px/1.25 'Rubik',
+    sans-serif;
+  color: var(--ink-soft);
+  text-align: center;
+}
+
+.qp-sheet[data-fit='sheet'] .qp-prompt {
+  max-height: none;
+  overflow: hidden;
+  font-weight: 600;
+  line-height: 1.24;
+  overflow-wrap: break-word;
+}
+
+.qp-sheet[data-fit='sheet'] .qp-prompt[hidden] {
+  display: none;
+}
+
+/* Реплики диалога читаются слева направо, как в учебнике. */
+.qp-sheet[data-fit='sheet'] .qp-prompt.qp-dialog {
+  text-align: left;
+}
+
+.qp-sheet[data-fit='sheet'] .qp-listen:not([hidden]) {
+  display: inline-flex;
+  align-self: center;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 8px 20px;
+  border: 0;
+  border-radius: 12px 15px 11px 14px / 14px 11px 15px 12px;
+  background-color: var(--card);
+  background-image: var(--card-tex);
+  color: var(--ink);
+  font:
+    700 18px/1.1 'Rubik',
+    sans-serif;
+  cursor: pointer;
+  box-shadow:
+    0 0 0 1px var(--ink-ghost),
+    0 3px 0 var(--ink-faint),
+    0 6px 12px var(--shadow-soft);
+}
+
+.qp-listen:active {
+  transform: translateY(2px);
+}
+
+.qp-listen:focus-visible {
+  outline: 3px solid var(--pip-on);
+  outline-offset: 3px;
+}
+
+.qp-sheet[data-fit='sheet'] .qp-options,
+.series-root[data-orient='landscape'] .qp-sheet[data-fit='sheet'] .qp-options {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  gap: 8px;
+  grid-auto-rows: minmax(44px, auto);
+}
+
+/* В ландшафте варианты банка стоят столбиком (11.2.4), а короткие варианты задания генератора —
+   сеткой 2 × 2: рядом с инструкцией и диалогом столбик из четырёх не помещается. */
+.series-root[data-orient='landscape'] .qp-sheet[data-fit='sheet'][data-layout='grid'] .qp-options {
+  grid-template-columns: 1fr 1fr;
+}
+
+/* Короткие варианты задания генератора (одно слово, «ist – gefahren»): ниже 56 px из 11.2.4,
+   чтобы рядом с инструкцией и материалом встал весь вопрос. */
+.qp-sheet[data-fit='sheet'] .qp-chip {
+  min-height: 44px;
+}
+
+/* Варианты-предложения: столбиком во всю ширину, текст по левому краю — так их легко сравнить. */
+.qp-sheet[data-layout='column'] .qp-options {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* По центру, пока помещается; если нет — первый вариант не уезжает за верхний край. */
+.qp-sheet[data-layout='column'] .qp-options > :first-child {
+  margin-top: auto;
+}
+
+.qp-sheet[data-layout='column'] .qp-options > :last-child {
+  margin-bottom: auto;
+}
+
+.qp-sheet[data-layout='column'] .qp-chip {
+  flex: 0 0 auto;
+  min-height: 40px;
+  padding: 7px 12px;
+  justify-content: flex-start;
+  font-weight: 500;
+}
+
+.qp-sheet[data-layout='column'] .qp-text {
+  max-height: none;
+  overflow: visible;
+  line-height: 1.22;
+  text-align: left;
+  overflow-wrap: break-word;
+}
+
+@media (pointer: fine) {
+  .qp-sheet[data-layout='column'] .qp-chip {
+    padding-left: 30px;
+  }
+
+  .qp-sheet[data-layout='column'] .qp-key {
+    top: 50%;
+    left: 11px;
+    transform: translateY(-50%);
+  }
+}
+
+/* Плотная раскладка: длинное задание на телефоне — меньше полей, прежде чем мельчить шрифт. */
+.qp-sheet.qp-dense {
+  gap: 5px;
+}
+
+.qp-sheet.qp-dense .qp-task {
+  padding: 7px 10px 6px;
+  gap: 2px;
+}
+
+.qp-sheet.qp-dense .qp-options {
+  gap: 4px;
+}
+
+.qp-sheet.qp-dense .qp-chip {
+  min-height: 40px;
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+.qp-sheet.qp-dense[data-layout='column'] .qp-chip {
+  min-height: 36px;
+}
+
+.qp-sheet.qp-dense .qp-prompt,
+.qp-sheet.qp-dense .qp-text {
+  line-height: 1.15;
+}
+
+/* Крайний случай (очень длинное задание на маленьком экране): лист прокручивается, а нижний
+   край тает — видно, что ниже есть ещё варианты. */
+.qp-sheet.qp-scroll {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  -webkit-mask-image: linear-gradient(to bottom, #000 82%, transparent);
+  mask-image: linear-gradient(to bottom, #000 82%, transparent);
+}
+
+.qp-sheet.qp-scroll.qp-scroll-end {
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+.qp-sheet.qp-scroll .qp-options {
+  flex: 0 0 auto;
+  overflow: visible;
+}
+
+/* Невысокий экран: заданию генератора нужнее место, чем полям панели. */
+@media (max-height: 700px) {
+  .qp.qp-generated {
+    padding: 9px 12px 10px;
+    gap: 6px;
+  }
+
+  .qp.qp-generated .qp-header {
+    min-height: 28px;
+  }
+
+  .qp.qp-generated .qp-sheet {
+    gap: 6px;
+  }
+
+  .qp.qp-generated .qp-task {
+    padding: 8px 11px 7px;
+  }
+}
+
 .qp-hint,
 .qp-intro {
   position: absolute;
@@ -1035,6 +1251,13 @@
   color: var(--ink-soft);
 }
 
+.menu-quiz {
+  font:
+    500 13px/1.35 'Rubik',
+    sans-serif;
+  color: var(--ink-soft);
+}
+
 .menu-buttons {
   display: flex;
   flex-direction: column;
@@ -1044,6 +1267,19 @@
 
 .menu-buttons .paper-btn {
   min-width: 220px;
+}
+
+.menu-row {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.menu-buttons .menu-row .paper-btn {
+  min-width: 0;
+  width: 160px;
+  max-width: 42vw;
+  padding: 10px 14px;
 }
 
 .menu-keys {
@@ -1270,6 +1506,87 @@
 
 .set-note:empty {
   display: none;
+}
+
+/* ───────────────────────── выбор тем вопросов ───────────────────────── */
+
+.quiz-card {
+  width: min(560px, 94vw);
+  max-height: 94vh;
+  padding: 22px 20px 18px;
+}
+
+.quiz-intro {
+  margin: 2px 0 8px !important;
+  font-size: 14px !important;
+  text-align: center;
+}
+
+.quiz-title {
+  margin: 14px 0 6px;
+  font:
+    700 15px/1.25 'Rubik',
+    sans-serif;
+  color: var(--ink);
+}
+
+.quiz-group-title {
+  margin: 8px 0 4px;
+  font:
+    500 13px/1.2 'Rubik',
+    sans-serif;
+  color: var(--ink-soft);
+}
+
+.quiz-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.quiz-tag {
+  min-height: 36px;
+  padding: 6px 11px;
+  border: 0;
+  border-radius: 9px 11px 8px 10px;
+  background: var(--card);
+  color: var(--ink);
+  font:
+    500 14px/1.2 'Rubik',
+    sans-serif;
+  cursor: pointer;
+  box-shadow:
+    0 0 0 1px var(--ink-faint),
+    0 2px 0 var(--ink-ghost);
+}
+
+.quiz-tag.is-on {
+  background: var(--caption);
+  font-weight: 700;
+}
+
+.quiz-tag:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.quiz-tag:focus-visible {
+  outline: 3px solid var(--pip-on);
+  outline-offset: 2px;
+}
+
+.quiz-check {
+  align-items: flex-start;
+  margin: 14px 0 0;
+}
+
+.quiz-check-hint {
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
+.quiz-buttons {
+  margin-top: 14px;
 }
 
 /* ───────────────────────── интро и обучение ───────────────────────── */

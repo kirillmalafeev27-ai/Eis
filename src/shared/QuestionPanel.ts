@@ -4,10 +4,20 @@ import type { Question, QuestionProvider } from './questions/types';
  * Панель вопроса серии (11.2): шапка (её заполняет игра), задание на жёлтой бумажке,
  * 2–4 варианта-фишки. Время ответа — performance.now() от момента, когда вопрос стал
  * активным, до клика, без пауз (12.5). Следующий вопрос загружается заранее (12.4).
+ *
+ * Задания генератора (формат Morskoy) приходят с инструкцией по-русски, немецким материалом и
+ * четырьмя вариантами, часто — целыми предложениями. Такие варианты стоят столбиком во всю ширину
+ * с текстом по левому краю: так четыре предложения, которые отличаются одной деталью, легко
+ * сравнить. Шрифт задания и вариантов подбирается вместе, пока всё не встанет в панель.
  */
 
 /** Ниже этого шрифт фишки не ужимается даже ради самого длинного ответа. */
 const HARD_MIN_PX = 11;
+/** Шрифт вариантов в заданиях генератора: с какого начинаем и ниже какого не ужимаем. */
+const SHEET_FONT_MAX_PX = 20;
+const SHEET_FONT_MIN_PX = 12;
+/** С этого размера раскладка задания уплотняется, прежде чем ужимать шрифт дальше. */
+const DENSE_FROM_PX = 14;
 export type PanelMode = 'off' | 'intro' | 'active' | 'ready' | 'paused';
 
 export interface QuestionPanelStrings {
@@ -15,6 +25,8 @@ export interface QuestionPanelStrings {
   group: string;
   option: (i: number, text: string) => string;
   readyHint: string;
+  /** Кнопка повтора фразы в аудировании. */
+  listen: string;
 }
 
 export interface QuestionPanelTiming {
@@ -33,6 +45,34 @@ export interface AnswerInfo {
   timeMs: number;
 }
 
+/** Озвучка фразы аудирования (shared/questions/speech.ts). */
+export interface PanelSpeaker {
+  speak(text: string): void;
+  stop(): void;
+}
+
+/**
+ * Варианты-предложения — столбиком. Порог по числу слов: в банке нет вариантов длиннее двух слов,
+ * поэтому его вопросы остаются в сетке 2 × 2, как в плане (11.2.4).
+ */
+export function isLongOptions(options: readonly string[]): boolean {
+  return options.some((o) => {
+    const words = o.trim().split(/\s+/).length;
+    return words >= 4 || (words >= 3 && o.replace(/\u00ad/g, '').length > 24);
+  });
+}
+
+/** Мини-диалог «— Реплика? — Ответ.»: каждая реплика с новой строки. */
+export function promptLines(text: string): string[] {
+  const t = text.trim();
+  const dash = /^([—–-])\s/.exec(t)?.[1];
+  if (!dash) return [t];
+  return t
+    .split(new RegExp(`\\s+(?=${dash}\\s)`))
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
 export class QuestionPanel {
   readonly el: HTMLElement;
   /** Шапка: её содержимое рисует игра (заряды, подпись). */
@@ -42,7 +82,9 @@ export class QuestionPanel {
 
   private readonly sheet: HTMLElement;
   private readonly task: HTMLElement;
+  private readonly instruction: HTMLElement;
   private readonly prompt: HTMLElement;
+  private readonly listen: HTMLButtonElement;
   private readonly options: HTMLElement;
   private readonly hint: HTMLElement;
   private readonly intro: HTMLElement;
@@ -51,6 +93,7 @@ export class QuestionPanel {
   private mode: PanelMode = 'off';
   private current: Question | null = null;
   private upcoming: Promise<Question> | null = null;
+  private upcomingReady = false;
   private busy = false;
   private activatedAt = 0;
   private stoppedAt = 0;
@@ -59,6 +102,10 @@ export class QuestionPanel {
   private timers: number[] = [];
   private reducedMotion = false;
   private destroyed = false;
+  private speaker: PanelSpeaker | null = null;
+  private autoSpeak: () => boolean = () => true;
+  /** Фраза текущего вопроса уже прозвучала сама. */
+  private spoken = false;
   /** Звуки панели: шорох верного ответа, «бонк» ошибки, перелистывание (9.2, 10.2). */
   onSound: ((name: 'correct' | 'wrong' | 'flip') => void) | null = null;
 
@@ -77,9 +124,20 @@ export class QuestionPanel {
     this.sheet = div('qp-sheet', body);
     this.task = div('qp-task', this.sheet);
     div('qp-tape', this.task);
+    this.instruction = div('qp-instruction', this.task);
+    this.instruction.lang = 'ru';
+    this.instruction.hidden = true;
     this.prompt = div('qp-prompt', this.task);
     this.prompt.setAttribute('aria-live', 'polite');
+    this.listen = document.createElement('button');
+    this.listen.type = 'button';
+    this.listen.className = 'qp-listen';
+    this.listen.hidden = true;
+    this.listen.textContent = `▶ ${strings.listen}`;
+    this.listen.addEventListener('click', () => this.say());
+    this.task.appendChild(this.listen);
     this.options = div('qp-options', this.sheet);
+    this.sheet.addEventListener('scroll', () => this.markScrollEnd(), { passive: true });
     this.hint = div('qp-hint', body);
     this.hint.textContent = strings.readyHint;
     this.intro = div('qp-intro', body);
@@ -87,7 +145,7 @@ export class QuestionPanel {
     this.corner = div('qp-corner', this.el);
     parent.appendChild(this.el);
     this.el.dataset.mode = 'off';
-    this.upcoming = provider.next();
+    this.preload();
     window.addEventListener('resize', this.fit);
   }
 
@@ -100,8 +158,33 @@ export class QuestionPanel {
     this.hint.textContent = text;
   }
 
+  /** Подпись вместо вопроса во время интро и пока первый вопрос ещё готовится. */
+  setIntroText(text: string): void {
+    this.intro.textContent = text;
+  }
+
+  /** Озвучка аудирования: фраза звучит сама, когда вопрос становится активным, если auto(). */
+  setSpeaker(speaker: PanelSpeaker | null, auto: () => boolean): void {
+    this.speaker?.stop();
+    this.speaker = speaker;
+    this.autoSpeak = auto;
+  }
+
   getMode(): PanelMode {
     return this.mode;
+  }
+
+  /** Готов ли вопрос к показу: на экране или уже загружен (иначе раунд ждёт, 12.4). */
+  isReady(): boolean {
+    return (this.current !== null && !this.busy) || this.upcomingReady;
+  }
+
+  /** Источник сменил темы: заранее загруженный вопрос больше не годится. */
+  reload(): void {
+    if (this.destroyed) return;
+    if (!this.busy) this.current = null;
+    this.preload();
+    this.updateChips();
   }
 
   /** Для тестов: индекс верного варианта текущего вопроса или −1. */
@@ -117,9 +200,15 @@ export class QuestionPanel {
     this.el.dataset.mode = mode;
     if (mode === 'active') {
       if (!this.current && !this.busy) void this.showNext(prev === 'intro' || prev === 'off');
-      else this.resumeClock();
+      else {
+        // Панель была скрыта (меню, уровни): размеры могли смениться — подогнать заново.
+        if (prev === 'off' && this.current) this.fit();
+        this.resumeClock();
+        this.maybeSpeak();
+      }
     } else {
       this.stopClock();
+      this.speaker?.stop();
     }
     this.updateChips();
   }
@@ -143,10 +232,20 @@ export class QuestionPanel {
     this.destroyed = true;
     for (const t of this.timers) window.clearTimeout(t);
     window.removeEventListener('resize', this.fit);
+    this.speaker?.stop();
     this.el.remove();
   }
 
   // ───────────────────────────── внутреннее ─────────────────────────────
+
+  private preload(): void {
+    const next = this.provider.next();
+    this.upcoming = next;
+    this.upcomingReady = false;
+    void next.then(() => {
+      if (this.upcoming === next) this.upcomingReady = true;
+    });
+  }
 
   private later(ms: number, fn: () => void): void {
     const id = window.setTimeout(() => {
@@ -171,9 +270,10 @@ export class QuestionPanel {
 
   private async showNext(instant: boolean): Promise<void> {
     this.busy = true;
-    const next = await (this.upcoming ?? this.provider.next());
+    if (!this.upcoming) this.preload();
+    const next = await (this.upcoming as Promise<Question>);
     if (this.destroyed) return;
-    this.upcoming = this.provider.next();
+    this.preload();
     const swap = () => {
       this.render(next);
       this.current = next;
@@ -185,6 +285,7 @@ export class QuestionPanel {
       if (this.mode === 'active') this.resumeClock();
       else this.stoppedAt = performance.now();
       this.updateChips();
+      this.maybeSpeak();
     };
     if (instant || this.reducedMotion) {
       swap();
@@ -201,9 +302,55 @@ export class QuestionPanel {
     });
   }
 
+  /** Фраза аудирования звучит один раз сама, как только вопрос стал активным. */
+  private maybeSpeak(): void {
+    const q = this.current;
+    if (!q?.audioText || this.spoken || this.busy || this.mode !== 'active') return;
+    if (!this.autoSpeak()) return;
+    this.spoken = true;
+    this.speaker?.speak(q.audioText);
+  }
+
+  /** Кнопка «Слушать»: повторить фразу. На паузе вопрос спрятан — и звука нет. */
+  private say(): void {
+    const q = this.current;
+    if (!q?.audioText || this.mode === 'paused' || this.mode === 'off') return;
+    this.spoken = true;
+    this.speaker?.speak(q.audioText);
+  }
+
   private render(q: Question): void {
-    this.prompt.textContent = q.prompt;
+    this.speaker?.stop();
+    this.spoken = false;
+    // Задания генератора — с инструкцией; их раскладка подбирается целиком (fitSheet).
+    const generated = !!q.instruction;
+    this.el.classList.toggle('qp-generated', generated);
+    this.sheet.dataset.fit = generated ? 'sheet' : 'items';
+    this.sheet.dataset.layout = isLongOptions(q.options) ? 'column' : 'grid';
+    this.sheet.classList.remove('qp-scroll', 'qp-dense');
+    this.sheet.scrollTop = 0;
+    this.instruction.textContent = q.instruction ?? '';
+    this.instruction.hidden = !q.instruction;
+    const audio = !!q.audioText;
+    this.task.classList.toggle('qp-task-audio', audio);
+    this.listen.hidden = !audio;
+    this.listen.setAttribute(
+      'aria-label',
+      audio ? `${this.strings.listen}: ${q.prompt}` : this.strings.listen,
+    );
+    // Текст — только textContent: задания приходят от модели и не должны стать разметкой.
+    const lines = promptLines(q.prompt);
+    this.prompt.classList.toggle('qp-dialog', lines.length > 1);
+    this.prompt.replaceChildren(
+      ...lines.map((line) => {
+        const s = document.createElement('span');
+        s.className = 'qp-line';
+        s.textContent = line;
+        return s;
+      }),
+    );
     this.prompt.lang = q.promptLang;
+    this.prompt.hidden = audio;
     this.options.innerHTML = '';
     this.options.dataset.count = String(q.options.length);
     this.chips = q.options.map((text, i) => {
@@ -237,6 +384,10 @@ export class QuestionPanel {
 
   /** Ужать шрифт задания и фишек, если текст не помещается (11.2.2). */
   private readonly fit = (): void => {
+    if (this.sheet.dataset.fit === 'sheet') {
+      this.fitSheet();
+      return;
+    }
     const max = this.timing.fontMaxPx;
     const min = this.timing.fontMinPx;
     let size = max;
@@ -288,12 +439,49 @@ export class QuestionPanel {
     }
   };
 
+  /**
+   * Задание генератора: один шаг шрифта на всё сразу (инструкция, материал, варианты), сверху
+   * вниз, пока лист не перестанет переполняться. С DENSE_FROM_PX поля и межстрочные интервалы
+   * становятся плотнее — сначала они, потом ещё меньший шрифт. Если не встало и на минимуме —
+   * лист прокручивается: лучше прокрутка, чем обрезанное предложение.
+   */
+  private fitSheet(): void {
+    const texts = this.chips.map((c) => c.querySelector('.qp-text') as HTMLElement);
+    const apply = (s: number, dense: boolean) => {
+      this.sheet.classList.toggle('qp-dense', dense);
+      this.prompt.style.fontSize = `${Math.min(this.timing.fontMaxPx, s + 2)}px`;
+      this.instruction.style.fontSize = `${Math.max(11, Math.min(15, s - 4))}px`;
+      for (const t of texts) t.style.fontSize = `${s}px`;
+    };
+    const over = (e: HTMLElement) => e.scrollHeight > e.clientHeight + 1;
+    const overflows = () =>
+      over(this.sheet) || over(this.options) || over(this.prompt) || texts.some((t) => over(t));
+    this.sheet.classList.remove('qp-scroll');
+    let s = SHEET_FONT_MAX_PX;
+    let dense = false;
+    apply(s, dense);
+    while (overflows()) {
+      if (!dense && s <= DENSE_FROM_PX) dense = true;
+      else if (s > SHEET_FONT_MIN_PX) s--;
+      else break;
+      apply(s, dense);
+    }
+    if (overflows()) this.sheet.classList.add('qp-scroll');
+    this.markScrollEnd();
+  }
+
+  private markScrollEnd(): void {
+    const end = this.sheet.scrollTop + this.sheet.clientHeight >= this.sheet.scrollHeight - 2;
+    this.sheet.classList.toggle('qp-scroll-end', end);
+  }
+
   private updateChips(): void {
     const enabled = this.mode === 'active' && !this.busy && !!this.current;
     for (const c of this.chips) {
       c.disabled = !enabled;
       c.tabIndex = enabled ? 0 : -1;
     }
+    this.listen.disabled = !this.current || this.mode === 'paused' || this.mode === 'off';
   }
 
   private choose(i: number, chip: HTMLButtonElement): boolean {

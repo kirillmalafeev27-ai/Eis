@@ -1,5 +1,6 @@
 import { balance } from '../config/balance';
 import type { HintMode } from '../config/levels';
+import { type QuizConfig, sanitizeQuizConfig } from '../shared/questions/topics';
 import { type KeyValueStorage, readJson, writeJson } from '../shared/storage';
 
 /** Настройки игрока (11.5.6), сохраняются между сессиями. */
@@ -32,6 +33,16 @@ export interface Progress {
 
 const SETTINGS = 'settings';
 const PROGRESS = 'progress';
+const QUIZ = 'quiz';
+
+/**
+ * Выбор тем вопросов. chosen — игрок уже решал (темы или встроенный набор): тогда «Играть»
+ * больше не открывает выбор тем сам.
+ */
+export interface QuizChoice {
+  chosen: boolean;
+  config: QuizConfig | null;
+}
 
 export function defaultSettings(): Settings {
   return {
@@ -81,4 +92,13 @@ const ORDER: HintMode[] = ['none', 'route', 'risk'];
 /** Подсказки в пределах того, что разрешает уровень (11.5.6). */
 export function effectiveHints(level: HintMode, user: HintMode): HintMode {
   return ORDER[Math.min(ORDER.indexOf(level), ORDER.indexOf(user))];
+}
+
+export function loadQuiz(s: KeyValueStorage): QuizChoice {
+  const raw = readJson<{ chosen?: unknown; config?: unknown }>(s, QUIZ, {});
+  return { chosen: raw.chosen === true, config: sanitizeQuizConfig(raw.config) };
+}
+
+export function saveQuiz(s: KeyValueStorage, config: QuizConfig | null): void {
+  writeJson(s, QUIZ, { chosen: true, config } satisfies QuizChoice);
 }

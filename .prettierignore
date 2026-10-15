@@ -1,4 +1,5 @@
 dist
+dist-server
 node_modules
 PLAN.md
 test-results

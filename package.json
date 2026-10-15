@@ -6,7 +6,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "build": "tsc --noEmit && vite build && vite build --ssr server/index.ts --outDir dist-server --emptyOutDir",
+    "start": "node dist-server/index.js",
+    "start:northflank": "node dist-server/index.js",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -31,5 +33,8 @@
     "typescript-eslint": "8.71.2",
     "vite": "8.3.4",
     "vitest": "5.0.4"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }

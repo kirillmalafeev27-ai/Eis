@@ -11,11 +11,15 @@ export class MenuScreen {
   readonly title: HTMLElement;
   readonly card: HTMLElement;
 
+  /** Подпись «Вопросы: B1 · Dativ, Perfekt» — её обновляет игра после выбора тем. */
+  private readonly quizLine: HTMLElement | null;
+
   constructor(
     worldOverlay: HTMLElement,
     questionCard: HTMLElement,
     onPlay: () => void,
     onSettings: () => void,
+    quiz?: { summary: string; open: () => void },
   ) {
     const word = paperWord(ru.title, {
       colors: [
@@ -38,17 +42,29 @@ export class MenuScreen {
       el('div', 'menu-tag', { lang: 'de' }, [ru.tagline]),
     ]);
     worldOverlay.appendChild(this.title);
+    this.quizLine = quiz ? el('div', 'menu-quiz', { lang: 'de' }, [quiz.summary]) : null;
     this.card = el('div', 'menu-card', {}, [
       el('div', 'menu-hello', {}, [ru.menuHello[0], el('br'), ru.menuHello[1]]),
       el('div', 'menu-hint', {}, [ru.menuHint]),
+      this.quizLine,
       el('div', 'menu-buttons', {}, [
         button(ru.play, 'paper-btn-primary paper-btn-big', onPlay),
-        button(ru.settings, '', onSettings),
+        // «Вопросы» и «Настройки» — в один ряд, чтобы меню не переросло панель.
+        quiz
+          ? el('div', 'menu-row', {}, [
+              button(ru.quiz.menu, '', quiz.open),
+              button(ru.settings, '', onSettings),
+            ])
+          : button(ru.settings, '', onSettings),
       ]),
       el('div', 'menu-keys', {}, [ru.keys]),
     ]);
     questionCard.appendChild(this.card);
     focusFirst(this.card);
+  }
+
+  setQuizSummary(text: string): void {
+    if (this.quizLine) this.quizLine.textContent = text;
   }
 
   destroy(): void {

@@ -15,6 +15,7 @@ import '@fontsource/fredoka/latin-700.css';
 import '@fontsource/fredoka/latin-ext-700.css';
 import { balance } from './config/balance';
 import { mountIce } from './embed';
+import { AiQuestionProvider } from './shared/questions/AiQuestionProvider';
 import { LocalBankProvider } from './shared/questions/LocalBankProvider';
 import bank from './shared/questions/bank.de.json';
 import type { Question } from './shared/questions/types';
@@ -23,12 +24,22 @@ const app = document.getElementById('app');
 if (app) {
   const params = new URLSearchParams(location.search);
   const level = params.get('level');
-  mountIce(app, {
-    questions: new LocalBankProvider(bank as Question[], {
-      noRepeatWithin: balance.questions.noRepeatWithin,
-      retryWrongMin: balance.questions.retryWrongMin,
-      retryWrongMax: balance.questions.retryWrongMax,
-    }),
-    level: level ? Number(level) : undefined,
+  const q = balance.questions;
+  const local = new LocalBankProvider(bank as Question[], {
+    noRepeatWithin: q.noRepeatWithin,
+    retryWrongMin: q.retryWrongMin,
+    retryWrongMax: q.retryWrongMax,
   });
+  // Вопросы сочиняет ИИ на сервере игры по выбранным темам; встроенный банк — запасной путь.
+  const questions = new AiQuestionProvider({
+    fallback: local,
+    batchSize: q.aiBatch,
+    refillAt: q.aiRefillAt,
+    firstWaitMs: q.aiFirstWaitMs,
+    nextWaitMs: q.aiNextWaitMs,
+    requestTimeoutMs: q.aiRequestTimeoutMs,
+    retryWrongMin: q.retryWrongMin,
+    retryWrongMax: q.retryWrongMax,
+  });
+  mountIce(app, { questions, level: level ? Number(level) : undefined });
 }

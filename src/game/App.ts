@@ -18,6 +18,9 @@ import { Mixer } from '../shared/audio/mixer';
 import { type Layout, createLayout } from '../shared/layout';
 import { PaceTracker } from '../shared/pace';
 import { QuestionPanel } from '../shared/QuestionPanel';
+import { type ConfigurableQuestionProvider, isConfigurable } from '../shared/questions/AiQuestionProvider';
+import { type Speaker, createSpeaker } from '../shared/questions/speech';
+import type { QuizConfig } from '../shared/questions/topics';
 import type { Question, QuestionProvider } from '../shared/questions/types';
 import { type KeyValueStorage, localStorageWithPrefix } from '../shared/storage';
 import { paperTheme } from '../shared/themes/paper';
@@ -31,6 +34,7 @@ import { LevelsScreen } from '../ui/screens/LevelsScreen';
 import { LoadingScreen } from '../ui/screens/LoadingScreen';
 import { MenuScreen } from '../ui/screens/MenuScreen';
 import { PauseScreen } from '../ui/screens/PauseScreen';
+import { QuizScreen } from '../ui/screens/QuizScreen';
 import { type ResultsData, ResultsScreen } from '../ui/screens/ResultsScreen';
 import { SettingsScreen } from '../ui/screens/SettingsScreen';
 import { TutorialBubble } from '../ui/screens/TutorialBubble';
@@ -40,8 +44,10 @@ import {
   effectiveHints,
   isBetter,
   loadProgress,
+  loadQuiz,
   loadSettings,
   saveProgress,
+  saveQuiz,
   saveSettings,
 } from './persist';
 import { Round } from './Round';
@@ -106,6 +112,12 @@ export class App implements SceneHost {
   private readonly game: Phaser.Game;
   private scene: GameScene | null = null;
   private readonly panel: QuestionPanel;
+  /** Источник, которому игрок выбирает темы (ИИ-генерация); у встроенного банка — null. */
+  private readonly quiz: ConfigurableQuestionProvider | null;
+  private quizChosen = false;
+  private readonly speaker: Speaker;
+  /** Интро кончилось, а первого вопроса ещё нет: раунд ждёт генерацию. */
+  private waitingQuestions = false;
   private readonly header: JumpHeader;
   private readonly basket: BasketWidget;
   private readonly mixer: Mixer;
@@ -132,6 +144,7 @@ export class App implements SceneHost {
   private pauseScreen: PauseScreen | null = null;
   private resultsScreen: ResultsScreen | null = null;
   private settingsScreen: SettingsScreen | null = null;
+  private quizScreen: QuizScreen | null = null;
   private tutorial: TutorialBubble | null = null;
   private introCaption: IntroCaption | null = null;
   private debug: DebugPanel | null = null;
@@ -160,10 +173,25 @@ export class App implements SceneHost {
     this.layout = createLayout(container, paperTheme, { ...balance.layout, questionFloor: 240 });
     this.layout.root.dataset.phase = 'boot';
 
+    // Темы — до панели: она сразу загружает первый вопрос (12.4). Если источник уже настроил
+    // встраивающий его хозяин, его выбор главнее сохранённого.
+    this.quiz = isConfigurable(opts.questions) ? opts.questions : null;
+    if (this.quiz) {
+      const saved = loadQuiz(this.storage);
+      this.quizChosen = saved.chosen || this.quiz.config() !== null;
+      if (saved.chosen && this.quiz.config() === null) this.quiz.configure(saved.config);
+    }
+
     this.panel = new QuestionPanel(
       this.layout.questionCard,
       opts.questions,
-      { getReady: ru.getReady, group: ru.questionGroup, option: ru.optionLabel, readyHint: ru.readyPick },
+      {
+        getReady: ru.getReady,
+        group: ru.questionGroup,
+        option: ru.optionLabel,
+        readyHint: ru.readyPick,
+        listen: ru.listen,
+      },
       {
         doubleTapGuardMs: balance.questions.doubleTapGuardMs,
         correctGlowMs: balance.questions.correctGlowMs,
@@ -177,6 +205,9 @@ export class App implements SceneHost {
     this.panel.onSound = (name) =>
       this.sfx(name === 'correct' ? ['correct', 'click'] : name === 'wrong' ? ['wrong'] : ['flip']);
     this.panel.setReducedMotion(this.reducedMotion());
+    // Аудирование: фраза звучит сама, если звук не выключен; кнопка «Слушать» — всегда.
+    this.speaker = createSpeaker();
+    this.panel.setSpeaker(this.speaker, () => !this.settings.muted);
     this.layout.root.classList.toggle('is-calm', this.reducedMotion());
     this.header = new JumpHeader(this.panel.header);
     this.basket = new BasketWidget(
@@ -272,12 +303,67 @@ export class App implements SceneHost {
     this.menu = new MenuScreen(
       this.layout.worldOverlay,
       this.layout.questionCard,
-      () => {
-        this.unlockAudio();
-        this.showLevels();
-      },
+      () => void this.play(),
       () => this.openSettings(),
+      this.quiz ? { summary: this.quizSummary(), open: () => this.openQuiz() } : undefined,
     );
+  }
+
+  /** «Играть»: в первый раз, если генерация на сервере есть, — сначала выбор тем. */
+  private async play(): Promise<void> {
+    this.unlockAudio();
+    if (this.quiz && !this.quizChosen) {
+      const status = await this.quiz.status();
+      if (this.phase !== 'menu' || this.quizScreen) return;
+      if (status.generationConfigured) {
+        this.openQuiz(() => this.showLevels());
+        return;
+      }
+    }
+    this.showLevels();
+  }
+
+  private quizSummary(): string {
+    const cfg = this.quiz?.config();
+    if (!cfg) return ru.quiz.summaryBank;
+    const topics = [...cfg.grammarTopics];
+    if (cfg.wortstellung) topics.push('Wortstellung');
+    if (cfg.listening) topics.push(ru.quiz.listeningOnly);
+    return ru.quiz.summary(cfg.level, topics);
+  }
+
+  /** Выбор тем (шаги меню Morskoy). then — что открыть после «Готово». */
+  private openQuiz(then?: () => void): void {
+    const quiz = this.quiz;
+    if (!quiz) return;
+    this.quizScreen?.destroy();
+    const apply = (cfg: QuizConfig | null) => {
+      saveQuiz(this.storage, cfg);
+      this.quizChosen = true;
+      // Те же темы — очереди не сбрасываем: уже готовые задания пригодятся.
+      if (JSON.stringify(cfg) !== JSON.stringify(quiz.config())) {
+        quiz.configure(cfg);
+        this.panel.reload();
+      }
+      this.menu?.setQuizSummary(this.quizSummary());
+      this.closeQuiz();
+      then?.();
+    };
+    this.quizScreen = new QuizScreen(
+      this.layout.screens,
+      quiz.config(),
+      quiz.status(),
+      (cfg) => apply(cfg),
+      () => apply(null),
+      () => this.closeQuiz(),
+    );
+  }
+
+  private closeQuiz(): void {
+    this.quizScreen?.destroy();
+    this.quizScreen = null;
+    const first = this.layout.root.querySelector<HTMLElement>('.menu-card button, .levels button');
+    first?.focus({ preventScroll: true });
   }
 
   private showLevels(): void {
@@ -343,6 +429,8 @@ export class App implements SceneHost {
     round.on((events, state) => this.onRoundEvents(events, state));
     this.setPhase('intro');
     this.introLeft = balance.anim.introMs;
+    this.waitingQuestions = false;
+    this.panel.setIntroText(ru.getReady);
     this.userPaused = false;
     this.autoPaused = false;
     this.shownFish = 0;
@@ -468,7 +556,15 @@ export class App implements SceneHost {
     if (!round) return;
     if (this.phase === 'intro') {
       if (!this.isPaused()) this.introLeft -= dtMs;
-      if (this.introLeft <= 0) this.beginPlay();
+      if (this.introLeft <= 0) {
+        // Раунд не начинается без вопроса: пока генерация готовит первый, всё стоит (12.4).
+        if (this.panel.isReady()) {
+          if (!this.isPaused()) this.beginPlay();
+        } else if (!this.waitingQuestions) {
+          this.waitingQuestions = true;
+          this.panel.setIntroText(ru.quiz.preparing);
+        }
+      }
       return;
     }
     if (this.phase === 'play' && !this.tutorialOpen) round.frame(dtMs);
@@ -485,6 +581,10 @@ export class App implements SceneHost {
   }
 
   private beginPlay(): void {
+    if (this.waitingQuestions) {
+      this.waitingQuestions = false;
+      this.panel.setIntroText(ru.getReady);
+    }
     this.introCaption?.destroy();
     this.introCaption = null;
     this.scene?.endIntro();
@@ -677,9 +777,13 @@ export class App implements SceneHost {
       e.preventDefault();
       return;
     }
-    // Модальные экраны сами обрабатывают Tab/Enter; Esc закрывает настройки.
+    // Модальные экраны сами обрабатывают Tab/Enter; Esc закрывает настройки и выбор тем.
     if (this.settingsScreen) {
       if (k === 'Escape') this.closeSettings();
+      return;
+    }
+    if (this.quizScreen) {
+      if (k === 'Escape') this.closeQuiz();
       return;
     }
     if (this.tutorialOpen) {
@@ -1086,6 +1190,9 @@ export class App implements SceneHost {
       feedback: () => this.feedback.slice(),
       settings: () => ({ ...this.settings }),
       showQuestion: (q: Question) => this.panel.debugShow(q),
+      panelReady: () => this.panel.isReady(),
+      quiz: () => this.quiz?.config() ?? null,
+      openQuiz: () => this.openQuiz(),
       fps: () => this.game.loop.actualFps,
       // Отладка (13.7): только dev-сборка и тесты.
       ageFloe: (k: number) =>
@@ -1134,6 +1241,8 @@ export class App implements SceneHost {
     for (const c of this.cleanups) c();
     this.closeScreens();
     this.settingsScreen?.destroy();
+    this.quizScreen?.destroy();
+    this.speaker.destroy();
     this.debug?.destroy();
     this.loading?.destroy();
     this.ro.disconnect();

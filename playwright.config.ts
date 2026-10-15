@@ -24,5 +24,7 @@ export default defineConfig({
     url: `http://localhost:${PORT}`,
     reuseExistingServer: true,
     timeout: 60_000,
+    // Тесты не ходят к модели: генерация на сервере выключена, нужное подменяет page.route.
+    env: { AITUNNEL_API_KEY: '', OPENAI_API_KEY: '', ELEVENLABS_API_KEY: '' },
   },
 });
