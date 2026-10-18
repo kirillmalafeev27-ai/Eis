@@ -9,6 +9,7 @@ import {
   resolveTopic,
 } from '../server/generation/grammarRules';
 import { parseTextExercises } from '../server/generation/textFormat';
+import { promptLines } from '../src/shared/QuestionPanel';
 import { GRAMMAR_TOPICS } from '../src/shared/questions/topics';
 
 /**
@@ -269,5 +270,105 @@ describe('текстовый формат с ключом ответов', () =>
     expect(rejected).toEqual([]);
     expect(questions).toHaveLength(2);
     expect(questions[0].correct).toBe(0);
+  });
+});
+
+/** Мини-диалог с урока: модель пишет реплики с новой строки, пропуск — во второй. */
+const DIALOG = ['— Hast du das neue Sofa schon gesehen?', '— Ja, ich habe mich gestern gleich ___ gesetzt.'];
+const SOFA_OPTIONS = [
+  'an dem bequemen Sofa',
+  'über das bequeme Sofa',
+  'auf das bequeme Sofa',
+  'mit dem bequemen Sofa',
+];
+
+/** Ответ модели из заданий-диалогов; в каждом блоке `{options}` — место вариантов A–D. */
+function dialogAnswer(blocks: string[]): string {
+  const options = SOFA_OPTIONS.map((o, i) => `${'ABCD'[i]}) ${o}`).join('\n');
+  const tasks = blocks.map(
+    (block, i) =>
+      `${i + 1}. Format: dialog\nAnweisung: Прочитай ситуацию и выбери подходящий вариант.\n${block.replace('{options}', options)}`,
+  );
+  const keys = blocks.map((_, i) => `${i + 1}: C = auf das bequeme Sofa`);
+  return `AUFGABEN\n${tasks.join('\n\n')}\n\nLÖSUNGEN\n${keys.join('\n')}`;
+}
+
+describe('многострочный материал задания', () => {
+  it('вторая реплика диалога — та, где пропуск, — доходит до экрана при любой записи', () => {
+    const parsed = parseTextExercises(
+      dialogAnswer([
+        `Aufgabe: ${DIALOG[0]}\n${DIALOG[1]}\n{options}`,
+        `Dialog:\n${DIALOG[0]}\n${DIALOG[1]}\n{options}`,
+        `${DIALOG[0]}\n${DIALOG[1]}\n{options}`,
+        `Aufgabe: ${DIALOG[0]}\nAntwort: ${DIALOG[1]}\n{options}`,
+      ]),
+      10,
+    );
+    expect(parsed.map((p) => p.display)).toEqual(Array(4).fill(DIALOG.join('\n')));
+
+    const { questions, rejected } = validateBatch(parsed.slice(0, 1), {
+      grammarTopic: 'Lokale Präpositionen',
+      count: 10,
+    });
+    expect(rejected).toEqual([]);
+    expect(questions[0].format).toBe('dialog');
+    // Панель показывает каждую реплику своей строкой.
+    expect(promptLines(questions[0].display)).toEqual(DIALOG);
+  });
+
+  it('решение и пояснение в материал не попадают', () => {
+    const parsed = parseTextExercises(
+      dialogAnswer([
+        `Aufgabe: ${DIALOG[0]}\n${DIALOG[1]}\nLösung: C\n{options}`,
+        `Aufgabe: ${DIALOG[0]}\n${DIALOG[1]}\nAntwort: C) auf das bequeme Sofa\n{options}`,
+        `Aufgabe: ${DIALOG[0]}\n${DIALOG[1]}\nAntwort: C = auf das bequeme Sofa\n{options}`,
+        `Aufgabe: ${DIALOG[0]}\n${DIALOG[1]}\nAntwort: c\n{options}`,
+        `Aufgabe: ${DIALOG[0]}\n${DIALOG[1]}\n{options}\nErklärung: wohin? → Akkusativ`,
+      ]),
+      10,
+    );
+    expect(parsed.map((p) => p.display)).toEqual(Array(5).fill(DIALOG.join('\n')));
+  });
+
+  it('задание на пропуск без пропуска отклоняется, даже если формат теме не положен', () => {
+    const raw = {
+      format: 'dialog',
+      text: 'Прочитай ситуацию и выбери подходящий вариант.',
+      display: DIALOG[0],
+      options: SOFA_OPTIONS,
+      correct: 2,
+    };
+    // У «Wechselpräpositionen» формата dialog нет, но модель его заявила — значит, ждём пропуск.
+    for (const grammarTopic of ['Lokale Präpositionen', 'Wechselpräpositionen']) {
+      const result = validateQuestion(raw, { grammarTopic });
+      expect(result.ok, grammarTopic).toBe(false);
+      if (!result.ok) expect(result.reason).toBe('Lücke fehlt im Aufgabenmaterial');
+      expect(validateQuestion({ ...raw, display: DIALOG.join('\n') }, { grammarTopic }).ok).toBe(true);
+    }
+  });
+
+  it('примеры из каталога форматов проходят проверку', () => {
+    for (const [id, format] of Object.entries(EXERCISE_FORMATS)) {
+      const result = validateQuestion(
+        { format: id, ...format.example },
+        { grammarTopic: format.example.topic },
+      );
+      expect(result.ok ? result.question.format : result.reason, id).toBe(id);
+    }
+  });
+
+  it('панель делит задание по переносам строк и по репликам', () => {
+    expect(promptLines('Zum Geburtstag hat Anna ___ geschenkt.')).toEqual([
+      'Zum Geburtstag hat Anna ___ geschenkt.',
+    ]);
+    expect(promptLines('— Muss ich? — Nein, du ___ nicht.')).toEqual([
+      '— Muss ich?',
+      '— Nein, du ___ nicht.',
+    ]);
+    expect(promptLines(' Im Möbelhaus.\r\n\n— Hast du? — Ja, ___ .\n')).toEqual([
+      'Im Möbelhaus.',
+      '— Hast du?',
+      '— Ja, ___ .',
+    ]);
   });
 });

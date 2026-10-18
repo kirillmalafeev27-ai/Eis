@@ -64,13 +64,18 @@ export function isLongOptions(options: readonly string[]): boolean {
   });
 }
 
-/** Мини-диалог «— Реплика? — Ответ.»: каждая реплика с новой строки. */
+/**
+ * Строки задания: переносы из задания сохраняются, а мини-диалог «— Реплика? — Ответ.» в одну
+ * строку тоже делится — каждая реплика с новой строки.
+ */
 export function promptLines(text: string): string[] {
-  const t = text.trim();
-  const dash = /^([—–-])\s/.exec(t)?.[1];
-  if (!dash) return [t];
-  return t
-    .split(new RegExp(`\\s+(?=${dash}\\s)`))
+  return text
+    .split('\n')
+    .flatMap((line) => {
+      const t = line.trim();
+      const dash = /^([—–-])\s/.exec(t)?.[1];
+      return dash ? t.split(new RegExp(`\\s+(?=${dash}\\s)`)) : [t];
+    })
     .map((s) => s.trim())
     .filter(Boolean);
 }

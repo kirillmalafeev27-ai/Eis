@@ -19,6 +19,22 @@ interface Q {
   audioText?: string;
 }
 
+/** Диалог с урока: реплики с новой строки, пропуск — во второй (так его пишет модель). */
+const DIALOG_LINES = [
+  '— Hast du das neue Sofa schon gesehen?',
+  '— Ja, ich habe mich gestern gleich ___ gesetzt.',
+];
+const DIALOG: Q = {
+  id: 'dialog-lines',
+  instruction: 'Прочитай ситуацию и выбери подходящий вариант.',
+  prompt: DIALOG_LINES.join('\n'),
+  promptLang: 'de',
+  options: ['an dem bequemen Sofa', 'über das bequeme Sofa', 'auf das bequeme Sofa', 'mit dem bequemen Sofa'],
+  optionsLang: 'de',
+  correctIndex: 2,
+  format: 'dialog',
+};
+
 /** Образцы — разобранные примеры из каталога форматов, то есть из самих инструкций для ИИ. */
 const SAMPLES: Q[] = [
   ...Object.entries(EXERCISE_FORMATS).map(([id, f]) => ({
@@ -47,6 +63,7 @@ const SAMPLES: Q[] = [
     correctIndex: 0,
     format: 'audio',
   },
+  DIALOG,
 ];
 
 /** На этих экранах задания каталога встают целиком, без прокрутки. */
@@ -107,6 +124,19 @@ for (const [w, h] of [
     expect(problems).toEqual([]);
   });
 }
+
+test('реплики диалога — каждая своей строкой, и та, где пропуск, видна', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await startLevel(page, 3);
+  await page.evaluate(() => window.__ice.freezeMelt());
+  await page.evaluate(
+    (q) => (window.__ice as unknown as { showQuestion(q: unknown): void }).showQuestion(q),
+    DIALOG,
+  );
+  await expect(page.locator('.qp-prompt .qp-line')).toHaveText(DIALOG_LINES);
+  await expect(page.locator('.qp-prompt')).toHaveClass(/qp-dialog/);
+  for (const line of await page.locator('.qp-prompt .qp-line').all()) await expect(line).toBeVisible();
+});
 
 /** Подменить сервер генерации: блок из десяти заданий по теме из запроса; gate придерживает ответ. */
 async function mockGeneration(page: Page, opts: { gate?: Promise<void> } = {}) {

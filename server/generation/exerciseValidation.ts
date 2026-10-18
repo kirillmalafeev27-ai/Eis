@@ -64,6 +64,12 @@ export const SENTENCE_FORMATS: ReadonlySet<string> = new Set([
 
 const MIN_SENTENCE_WORDS = 4;
 
+/** Форматы, где по описанию в каталоге пропуск стоит в материале: без него задание не решить. */
+export const GAP_FORMATS: ReadonlySet<string> = new Set(['luecke', 'mehrfachluecke', 'dialog']);
+
+/** Пропуск в материале: «___», «…» или нумерованный «(1)». */
+const GAP = /_{2,}|…|\.{3}|\(\s*\d\s*\)/;
+
 export function normalizeText(value: unknown): string {
   return String(value == null ? '' : value)
     .replace(/\s+/g, ' ')
@@ -175,6 +181,10 @@ export function validateQuestion(raw: unknown, context: ValidationContext = {}):
     .trim()
     .toLowerCase();
   const format = declared && allowedFormats.includes(declared) && isFormatId(declared) ? declared : null;
+
+  // Задание на пропуск без пропуска: например, до экрана дошла только первая реплика диалога,
+  // а варианты подставляются во вторую. Смотрим на заявленный формат, даже если теме он не положен.
+  if (GAP_FORMATS.has(declared) && !GAP.test(display)) return reject('Lücke fehlt im Aufgabenmaterial');
 
   // ПРОВЕРКА СУБСТАНЦИИ — главная защита от примитивных заданий. Если ВСЕ четыре варианта
   // меньше минимума темы, это запрещённое задание на служебное слово: например,
