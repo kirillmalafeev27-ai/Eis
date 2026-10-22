@@ -109,8 +109,9 @@ export const ru = {
     } as Record<string, string>,
     lexical: 'Лексическая тема',
     lexicalAny: 'Любая',
-    grammar: (n: number, max: number) => `Грамматика — выбрано ${n} из ${max}`,
+    topics: (n: number, max: number) => `Темы — выбрано ${n} из ${max}`,
     groups: {
+      vocab: 'Свои наборы слов',
       verbs: 'Глаголы',
       nouns: 'Существительные, артикли, местоимения',
       adjectives: 'Прилагательные',
@@ -119,6 +120,8 @@ export const ru = {
       clauses: 'Придаточные',
       advanced: 'Продвинутое',
     } as Record<string, string>,
+    vocabNote:
+      'Только слова из списка — по смыслу и с предлогами. Задания составлены заранее: уровень и лексическая тема на них не влияют.',
     wortstellung: 'Порядок слов (Wortstellung)',
     wortstellungHint: (topic: string | null) =>
       topic ? `Задания на порядок слов на материале темы «${topic}»` : 'Сначала выбери грамматическую тему',

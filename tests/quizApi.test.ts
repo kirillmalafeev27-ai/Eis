@@ -171,6 +171,30 @@ describe('HTTP-обработчик', () => {
     expect(await (await fetch(`${base}/index.html`)).text()).toBe('next');
   });
 
+  it('свой набор слов отдаётся без ключа генерации и без обращения к модели', async () => {
+    const ai = fakeAi(() => ({ status: 500 }));
+    const base = await serve({}, ai.fetchImpl);
+    const res = await fetch(`${base}/api/generate-questions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        level: 'A2',
+        grammarTopic: 'Wortschatz für Sascha und Präpositionen',
+        count: 10,
+        exclude: ['Я горжусь своим рисунком.'],
+      }),
+    });
+    expect(res.status).toBe(200);
+    const { questions } = (await res.json()) as { questions: Record<string, unknown>[] };
+    expect(questions).toHaveLength(10);
+    expect(questions.map((q) => q.display)).not.toContain('Я горжусь своим рисунком.');
+    for (const q of questions) {
+      expect(['wortwahl', 'uebersetzung', 'praeposition', 'kasus']).toContain(q.format);
+      expect(q.options).toHaveLength(4);
+    }
+    expect(ai.calls).toEqual([]);
+  });
+
   it('генерация через HTTP отдаёт задания в формате Morskoy', async () => {
     const ai = fakeAi(() => ({ status: 200, content: modelAnswer(3) }));
     const base = await serve(ENV, ai.fetchImpl);

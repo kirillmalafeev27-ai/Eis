@@ -1,4 +1,4 @@
-import type { QuizConfig } from './topics';
+import { type QuizConfig, isVocabTopic } from './topics';
 import type { Question, QuestionProvider } from './types';
 
 /**
@@ -238,21 +238,18 @@ export class AiQuestionProvider implements ConfigurableQuestionProvider {
     if (s.pool.length > this.opts.refillAt) return;
     const epoch = this.epoch;
     s.inflight = true;
+    // Показанные задания и те, что ещё ждут в очереди: новый блок не должен их повторять.
+    const exclude = [...s.used.slice(-EXCLUDE_LAST), ...s.pool.map((q) => q.audioText ?? q.prompt)];
     const body =
       s.kind === 'audio'
-        ? {
-            level: cfg.level,
-            lexicalTopic: cfg.lexicalTopic,
-            count: this.opts.batchSize,
-            exclude: s.used.slice(-EXCLUDE_LAST),
-          }
+        ? { level: cfg.level, lexicalTopic: cfg.lexicalTopic, count: this.opts.batchSize, exclude }
         : {
             level: cfg.level,
             lexicalTopic: cfg.lexicalTopic,
             grammarTopic: s.grammarTopic,
             isWortstellung: s.isWortstellung,
             count: this.opts.batchSize,
-            exclude: s.used.slice(-EXCLUDE_LAST),
+            exclude,
           };
     const path = s.kind === 'audio' ? 'api/generate-audio-questions' : 'api/generate-questions';
     this.request(path, body)
@@ -318,7 +315,8 @@ export class AiQuestionProvider implements ConfigurableQuestionProvider {
       q = {
         id,
         prompt: display,
-        promptLang: 'de',
+        // Материал по-немецки; у заданий на перевод из своих наборов слов — русская фраза.
+        promptLang: r.displayLang === 'ru' ? 'ru' : 'de',
         instruction: text || undefined,
         options,
         optionsLang: 'de',
@@ -375,8 +373,10 @@ function buildStreams(cfg: QuizConfig): Stream[] {
     used: [],
   });
   const streams = cfg.grammarTopics.map((t) => make('grammar', t, false));
-  // Слот Wortstellung из Morskoy: порядок слов на материале первой выбранной темы.
-  if (cfg.wortstellung && cfg.grammarTopics.length) streams.push(make('grammar', cfg.grammarTopics[0], true));
+  // Слот Wortstellung из Morskoy: порядок слов на материале первой грамматической темы
+  // (у своих наборов слов заданий на порядок слов нет).
+  const firstGrammar = cfg.grammarTopics.find((t) => !isVocabTopic(t));
+  if (cfg.wortstellung && firstGrammar) streams.push(make('grammar', firstGrammar, true));
   if (cfg.listening) streams.push(make('audio', null, false));
   return streams;
 }

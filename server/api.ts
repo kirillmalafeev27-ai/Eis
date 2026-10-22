@@ -6,6 +6,7 @@ import { type GeneratedQuestion, validateBatch } from './generation/exerciseVali
 import { resolveTopic } from './generation/grammarRules.ts';
 import { parseTextExercises } from './generation/textFormat.ts';
 import { TtsService, ttsConfigFromEnv } from './tts.ts';
+import { type VocabQuestion, findVocabSet, pickVocabQuestions } from './vocab/vocabSets.ts';
 
 /**
  * API вопросов (перенесено из Morskoy, quiz-generation.js): генерация заданий по грамматике,
@@ -22,6 +23,8 @@ export interface QuizApiOptions {
   env: Env;
   fetch?: FetchLike;
   log?: Logger;
+  /** Случайность выбора и перемешивания (для тестов). */
+  random?: () => number;
 }
 
 /** Сколько лишних заданий держать про запас на один ключ (тема × уровень × лексика). */
@@ -66,6 +69,7 @@ export class QuizService {
   readonly tts: TtsService;
   private readonly fetchImpl: FetchLike;
   private readonly logger: Logger;
+  private readonly random: () => number;
   private readonly questionPool = new Map<string, GeneratedQuestion[]>();
   private readonly audioPool = new Map<string, AudioQuestion[]>();
 
@@ -74,6 +78,7 @@ export class QuizService {
     this.fetchImpl = opts.fetch ?? fetch;
     this.tts = new TtsService(ttsConfigFromEnv(opts.env), this.fetchImpl);
     this.logger = opts.log ?? console;
+    this.random = opts.random ?? Math.random;
   }
 
   status() {
@@ -85,10 +90,19 @@ export class QuizService {
     };
   }
 
-  /** Блок заданий по грамматической теме. */
-  async generateQuestions(body: GenerateRequest): Promise<{ questions: GeneratedQuestion[] }> {
+  /** Блок заданий по грамматической теме или по своему набору слов. */
+  async generateQuestions(
+    body: GenerateRequest,
+  ): Promise<{ questions: (GeneratedQuestion | VocabQuestion)[] }> {
     const { level, grammarTopic } = body;
     if (!level || !grammarTopic) throw new HttpError(400, 'level and grammarTopic are required');
+    // Свой набор слов: задания написаны заранее, модель не нужна (и ключ генерации тоже).
+    const vocab = findVocabSet(grammarTopic);
+    if (vocab) {
+      return {
+        questions: pickVocabQuestions(vocab, clampCount(body.count), cleanList(body.exclude), this.random),
+      };
+    }
     // В отличие от Morskoy, тема обязана быть из каталога: иначе API становится бесплатным
     // доступом к модели с любым текстом в промпте.
     const topic = resolveTopic(grammarTopic);

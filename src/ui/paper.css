@@ -1558,6 +1558,14 @@
   gap: 6px;
 }
 
+/* Как .set-note: правило .paper-card p иначе перебивает размер. */
+.quiz-group-note {
+  margin: 6px 0 0 !important;
+  font-size: 13px !important;
+  line-height: 1.35 !important;
+  color: var(--ink-soft);
+}
+
 .quiz-tag {
   min-height: 36px;
   padding: 6px 11px;

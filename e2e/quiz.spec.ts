@@ -1,5 +1,7 @@
 import { type Page, type Route, expect, test } from '@playwright/test';
 import { EXERCISE_FORMATS } from '../server/generation/exerciseFormats';
+import { SASCHA } from '../server/vocab/sascha';
+import { VOCAB_INSTRUCTIONS, type VocabTask } from '../server/vocab/vocabSets';
 import { startLevel, waitPhase, watchErrors } from './helpers';
 
 /**
@@ -35,6 +37,22 @@ const DIALOG: Q = {
   format: 'dialog',
 };
 
+/** Свой набор слов: задания из него в том виде, в каком их отдаёт сервер. */
+const VOCAB_TASKS = SASCHA.items.flatMap((item) => item.tasks);
+const vocabSample = (id: string, score: (t: VocabTask) => number): Q => {
+  const t = VOCAB_TASKS.reduce((a, b) => (score(b) > score(a) ? b : a));
+  return {
+    id,
+    instruction: VOCAB_INSTRUCTIONS[t.kind],
+    prompt: t.display,
+    promptLang: t.kind === 'uebersetzung' ? 'ru' : 'de',
+    options: [...t.options],
+    optionsLang: 'de',
+    correctIndex: 0,
+    format: t.kind,
+  };
+};
+
 /** Образцы — разобранные примеры из каталога форматов, то есть из самих инструкций для ИИ. */
 const SAMPLES: Q[] = [
   ...Object.entries(EXERCISE_FORMATS).map(([id, f]) => ({
@@ -64,6 +82,9 @@ const SAMPLES: Q[] = [
     format: 'audio',
   },
   DIALOG,
+  // Самый длинный материал и самые длинные варианты из своего набора слов.
+  vocabSample('vocab-display', (t) => t.display.length),
+  vocabSample('vocab-options', (t) => t.options.join(' ').length),
 ];
 
 /** На этих экранах задания каталога встают целиком, без прокрутки. */
@@ -251,6 +272,54 @@ test('раунд ждёт первый вопрос генератора, пок
   await waitPhase(page, 'play');
   await expect(page.locator('.qp-intro')).toHaveText('Приготовься…');
   await expect(page.locator('.qp-prompt')).toHaveText(/Sein Zug/);
+});
+
+test('свой набор слов: выбор в «Вопросах» и в раунде только задания из списка', async ({ page }) => {
+  const errors = watchErrors(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  // Генерация «настроена», но задания набора сервер отдаёт сам, без модели и без подмены.
+  await page.route('**/api/quiz/status', (route) =>
+    route.fulfill({ json: { ok: true, generationConfigured: true, ttsConfigured: false, models: ['test'] } }),
+  );
+  await page.goto('/?test');
+  await waitPhase(page, 'menu');
+  await page.getByRole('button', { name: 'Вопросы' }).click();
+  await expect(page.locator('.screen-quiz')).toBeVisible();
+  await page.getByRole('button', { name: SASCHA.topic, exact: true }).click();
+  await expect(page.locator('.quiz-check input').first()).toBeDisabled();
+  await expect(page.locator('.screen-quiz')).toContainText('Только слова из списка');
+  await page.getByRole('button', { name: 'Готово' }).click();
+  await expect(page.locator('.menu-quiz')).toContainText(SASCHA.topic);
+
+  await page.getByRole('button', { name: 'Играть' }).click();
+  await waitPhase(page, 'levels');
+  await page.locator('.level-card').first().click();
+  await waitPhase(page, 'intro', 'play');
+  await page.evaluate(() => window.__ice.skipIntro());
+  await waitPhase(page, 'play');
+  await page.evaluate(() => window.__ice.freezeMelt());
+
+  const displays = new Set(VOCAB_TASKS.map((t) => t.display));
+  const instructions = new Set(Object.values(VOCAB_INSTRUCTIONS));
+  const seen = new Set<string>();
+  // Каждый верный ответ — прыжок к дальнему берегу; уровень 1 за четыре прыжка не кончается.
+  for (let i = 0; i < 4; i++) {
+    await page.evaluate(() => window.__ice.toShore());
+    await page.waitForFunction(() => window.__ice.correctIndex() >= 0);
+    const instruction = (await page.locator('.qp-instruction').textContent()) ?? '';
+    const prompt = await page.locator('.qp-prompt').evaluate((e) => (e as HTMLElement).innerText);
+    expect(instructions.has(instruction), instruction).toBe(true);
+    expect(displays.has(prompt.replace(/\s+/g, ' ').trim()), prompt).toBe(true);
+    seen.add(prompt);
+    await page.waitForTimeout(200); // защита от двойного тапа (2.7.4)
+    expect(await page.evaluate(() => window.__ice.press(window.__ice.correctIndex() + 1))).toBe(true);
+    await page.waitForFunction(
+      (p) => (document.querySelector('.qp-prompt') as HTMLElement).innerText !== p,
+      prompt,
+    );
+  }
+  expect(seen.size).toBe(4);
+  expect(errors).toEqual([]);
 });
 
 test('без ключа генерации «Играть» ведёт сразу к уровням, а в «Вопросах» видно почему', async ({ page }) => {

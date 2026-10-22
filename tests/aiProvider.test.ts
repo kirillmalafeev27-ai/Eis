@@ -92,6 +92,8 @@ function provider(fetchImpl: typeof fetch, fallback = bank(), over: Partial<AiPr
   });
 }
 
+const SASCHA = 'Wortschatz für Sascha und Präpositionen';
+
 const B1: QuizConfig = {
   level: 'B1',
   lexicalTopic: 'Reisen und Urlaub',
@@ -145,17 +147,22 @@ describe('ИИ-провайдер вопросов', () => {
     });
   });
 
-  it('заранее запрашивает следующий блок и передаёт уже показанные задания', async () => {
+  it('заранее запрашивает следующий блок и передаёт показанные и ждущие в очереди задания', async () => {
     const server = api();
     const p = provider(server.fetchImpl);
     p.configure({ ...B1, grammarTopics: ['Dativ'] });
-    for (let i = 0; i < 7; i++) await p.next();
+    const shown: string[] = [];
+    for (let i = 0; i < 7; i++) shown.push((await p.next()).prompt);
     // Осталось 3 из 10 — пора за следующим блоком.
     await new Promise((r) => setTimeout(r, 10));
     const calls = server.requests.filter((r) => r.path === 'api/generate-questions');
     expect(calls).toHaveLength(2);
-    expect(calls[1].body.exclude).toHaveLength(7);
-    for (let i = 0; i < 10; i++) expect((await p.next()).prompt).toMatch(/^Dativ #/);
+    const exclude = calls[1].body.exclude as string[];
+    expect(exclude).toHaveLength(10);
+    expect(exclude.slice(0, 7)).toEqual(shown);
+    const queued = exclude.slice(7);
+    for (let i = 0; i < 3; i++) expect(queued).toContain((await p.next()).prompt);
+    for (let i = 0; i < 7; i++) expect((await p.next()).prompt).toMatch(/^Dativ #/);
   });
 
   it('неверный ответ возвращается через 4–6 вопросов', async () => {
@@ -235,6 +242,32 @@ describe('ИИ-провайдер вопросов', () => {
     expect(server.requests.some((r) => r.path === 'api/generate-audio-questions')).toBe(true);
   });
 
+  it('свой набор слов: Wortstellung — на материале первой грамматической темы, перевод — русская фраза', async () => {
+    const server = api();
+    const p = provider(server.fetchImpl);
+    p.configure({ ...B1, grammarTopics: [SASCHA, 'Dativ'], wortstellung: true });
+    for (let i = 0; i < 3; i++) await p.next();
+    const word = server.requests.filter((r) => r.body.isWortstellung === true);
+    expect(word.map((r) => r.body.grammarTopic)).toEqual(['Dativ']);
+
+    const ru = (async () =>
+      Response.json({
+        questions: [
+          {
+            format: 'uebersetzung',
+            text: 'Как сказать это по-немецки?',
+            display: 'Я горжусь своим рисунком.',
+            displayLang: 'ru',
+            options: ['Ich bin stolz auf mein Bild.', 'b', 'c', 'd'],
+            correct: 0,
+          },
+        ],
+      })) as unknown as typeof fetch;
+    const q2 = provider(ru);
+    q2.configure({ ...B1, grammarTopics: [SASCHA] });
+    expect(await q2.next()).toMatchObject({ promptLang: 'ru', optionsLang: 'de', format: 'uebersetzung' });
+  });
+
   it('битые задания из ответа отбрасываются', async () => {
     const broken = (async () =>
       Response.json({
@@ -271,6 +304,14 @@ describe('сохранённый выбор тем', () => {
       lexicalTopic: null,
       grammarTopics: ['Dativ', 'Perfekt', 'Passiv', 'Genitiv', 'Negation'],
       wortstellung: true,
+      listening: false,
+    });
+    // Свой набор слов — тоже тема; порядку слов на нём не тренироваться.
+    expect(sanitizeQuizConfig({ level: 'A2', grammarTopics: [SASCHA], wortstellung: true })).toEqual({
+      level: 'A2',
+      lexicalTopic: null,
+      grammarTopics: [SASCHA],
+      wortstellung: false,
       listening: false,
     });
     expect(

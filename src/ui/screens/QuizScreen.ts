@@ -7,12 +7,14 @@ import {
   LEXICAL_TOPICS,
   MAX_GRAMMAR_TOPICS,
   type QuizConfig,
+  VOCAB_TOPICS,
+  isVocabTopic,
 } from '../../shared/questions/topics';
 import { button, el, focusFirst } from '../dom';
 
 /**
- * Выбор тем вопросов — шаги меню Morskoy в одной карточке: уровень, лексическая тема,
- * грамматические темы (до пяти, они чередуются), слот Wortstellung и аудирование.
+ * Выбор тем вопросов — шаги меню Morskoy в одной карточке: уровень, лексическая тема, темы
+ * (до пяти, они чередуются: свои наборы слов и грамматика), слот Wortstellung и аудирование.
  */
 export class QuizScreen {
   readonly root: HTMLElement;
@@ -81,12 +83,12 @@ export class QuizScreen {
     );
     lexicalGroup.lang = 'de';
 
-    // Грамматика: несколько тем, не больше MAX_GRAMMAR_TOPICS.
-    const grammarTitle = el('h3', 'quiz-title');
+    // Темы: свои наборы слов и грамматика, вместе не больше MAX_GRAMMAR_TOPICS.
+    const topicsTitle = el('h3', 'quiz-title');
     const topicButtons: { b: HTMLButtonElement; topic: string }[] = [];
-    const grammarGroups = GRAMMAR_GROUPS.map((g) => {
+    const group = (title: string, topics: readonly string[], note?: string) => {
       const tags = el('div', 'quiz-tags', { lang: 'de' });
-      for (const topic of g.topics) {
+      for (const topic of topics) {
         const b = el('button', 'quiz-tag', { type: 'button' }, [topic]);
         b.addEventListener('click', () => {
           const i = cur.grammarTopics.indexOf(topic);
@@ -97,8 +99,16 @@ export class QuizScreen {
         tags.appendChild(b);
         topicButtons.push({ b, topic });
       }
-      return el('div', 'quiz-group', {}, [el('div', 'quiz-group-title', {}, [t.groups[g.id] ?? g.id]), tags]);
-    });
+      return el('div', 'quiz-group', {}, [
+        el('div', 'quiz-group-title', {}, [title]),
+        tags,
+        note ? el('p', 'quiz-group-note', {}, [note]) : null,
+      ]);
+    };
+    const topicGroups = [
+      group(t.groups.vocab, VOCAB_TOPICS, t.vocabNote),
+      ...GRAMMAR_GROUPS.map((g) => group(t.groups[g.id] ?? g.id, g.topics)),
+    ];
 
     const check = (label: string, value: () => boolean, set: (v: boolean) => void) => {
       const input = el('input', 'set-check', { type: 'checkbox', 'aria-label': label });
@@ -132,16 +142,18 @@ export class QuizScreen {
 
     const syncGrammar = () => {
       const n = cur.grammarTopics.length;
-      grammarTitle.textContent = t.grammar(n, MAX_GRAMMAR_TOPICS);
+      topicsTitle.textContent = t.topics(n, MAX_GRAMMAR_TOPICS);
       for (const { b, topic } of topicButtons) {
         const on = cur.grammarTopics.includes(topic);
         b.classList.toggle('is-on', on);
         b.setAttribute('aria-pressed', String(on));
         b.disabled = !on && n >= MAX_GRAMMAR_TOPICS;
       }
-      if (!n) cur.wortstellung = false;
-      word.input.disabled = !n;
-      word.hint.textContent = t.wortstellungHint(cur.grammarTopics[0] ?? null);
+      // Порядок слов — на материале первой грамматической темы: у наборов слов его нет.
+      const firstGrammar = cur.grammarTopics.find((topic) => !isVocabTopic(topic)) ?? null;
+      if (!firstGrammar) cur.wortstellung = false;
+      word.input.disabled = !firstGrammar;
+      word.hint.textContent = t.wortstellungHint(firstGrammar);
       word.sync();
       listen.sync();
       const ok = n > 0 || cur.listening;
@@ -165,8 +177,8 @@ export class QuizScreen {
         levelGroup,
         el('h3', 'quiz-title', {}, [t.lexical]),
         lexicalGroup,
-        grammarTitle,
-        ...grammarGroups,
+        topicsTitle,
+        ...topicGroups,
         word.row,
         listen.row,
         need,
